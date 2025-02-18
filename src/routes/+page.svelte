@@ -7,6 +7,9 @@
   let params: any = $state({})
   let images: any = $state({})
   let settings: any = $state({})
+  let status_message: string = $state('')
+  let overall_percent: number = $state(0)
+  let current_percent: number = $state(0)
 
   async function handle_keypress(event: KeyboardEvent) {
     if (event.key === 'Enter') {
@@ -81,12 +84,11 @@
         JSON.stringify({
           session_id: session.session_id,
           images: 1,
-          prompt:
-            'score_9, score_8_up, score_7_up, score_6_up, content_explicit, source_anime, high quality, high contrast, realistic, 2girls, maid',
+          prompt: settings.prompt,
           negativeprompt:
             'text, watermark, low-quality, signature, monochrome, 3d, censored, muscles, lores, worst quality, censored, mosaic',
           model: settings.model,
-          seed: 790918513,
+          seed: -1,
           steps: 50,
           cfgscale: 5.5,
           aspectratio: '2:3',
@@ -109,9 +111,18 @@
     ws.onmessage = (event) => {
       const wsData = JSON.parse(event.data)
       console.log(wsData)
+      if (wsData.backend_status) {
+        status_message = `Status: ${wsData.backend_status.status}`
+      }
+      if (wsData.gen_progress) {
+        status_message = ''
+        overall_percent = Math.round(wsData.gen_progress.overall_percent * 100)
+        current_percent = Math.round(wsData.gen_progress.current_percent * 100)
+      }
       if (wsData.image) {
         image = 'http://localhost:7801/' + wsData.image
         ws.close()
+        overall_percent = 0
       }
     }
 
@@ -137,8 +148,8 @@
   })
 </script>
 
-<div class="flex flex-row gap-4">
-  <div class="flex max-w-80 flex-col">
+<div class="grid grid-cols-[20rem_1fr] gap-2">
+  <div class="flex flex-col">
     <h1 class="text-3xl font-bold">Wild Swarm</h1>
     {#if session}
       <div class="text-zinc-400">SwarmUI version: <em>{session.version}</em></div>
@@ -167,7 +178,18 @@
       <button class="mt-4 border-1" onclick={handle_generate}>Generate</button>
     {/if}
   </div>
-  <div class="flex-grow">
-    <img src={image} alt="generated" class="max-h-[97vh]" />
+  <div>
+    <div class="relative inline-block align-top leading-none">
+      <img src={image} alt="generated" class="max-h-[calc(100vh-2rem)]" />
+      {#if status_message}
+        <div class="absolute bottom-0 left-0 p-1">{status_message}</div>
+      {/if}
+      {#if overall_percent > 0}
+        <div class="absolute right-0 bottom-0 left-0 h-2">
+          <div class="h-1 bg-green-600 transition-all" style={`width: ${current_percent}%`}></div>
+          <div class="h-1 bg-sky-600 transition-all" style={`width: ${overall_percent}%`}></div>
+        </div>
+      {/if}
+    </div>
   </div>
 </div>
