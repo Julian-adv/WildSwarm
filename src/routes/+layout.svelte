@@ -1,11 +1,9 @@
 <script lang="ts">
-	import '../app.css';
+  import '../app.css'
 
-	export const ssr = false;
-
-	let { children } = $props();
+  let { children } = $props()
 </script>
 
 <div class="p-4">
-	{@render children()}
+  {@render children()}
 </div>

@@ -15,15 +15,19 @@ textarea {
   @apply mt-1 rounded border-1 p-1;
 }
 
+button:focus,
+select:focus,
 textarea:focus {
   border-color: var(--focus-color);
   @apply ring-2 ring-sky-600 outline-none;
 }
 
-button {
-  @apply cursor-pointer rounded border-stone-400 px-2 py-1;
+button,
+select {
+  @apply cursor-pointer rounded border-1 border-stone-400 px-2 py-1;
 }
 
-button:hover {
+button:hover,
+select:hover {
   @apply bg-stone-100;
 }
