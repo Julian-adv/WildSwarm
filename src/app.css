@@ -27,6 +27,10 @@ select {
   @apply cursor-pointer rounded border-1 border-stone-400 px-2 py-1;
 }
 
+select.xs {
+  @apply px-1 py-[2px];
+}
+
 button:hover,
 select:hover {
   @apply bg-stone-100;

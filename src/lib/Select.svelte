@@ -1,7 +1,7 @@
 <script lang="ts">
   interface Props {
     items: string[]
-    value: string
+    value?: string
     inner_class: string
   }
   let { items, value = $bindable(), inner_class }: Props = $props()

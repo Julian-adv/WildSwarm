@@ -1,5 +1,6 @@
 <script lang="ts">
   import Select from '$lib/Select.svelte'
+  import { process_wildcards, save_yaml } from '$lib/wildcards'
   import { onMount } from 'svelte'
 
   let session: any = $state({})
@@ -10,6 +11,13 @@
   let status_message: string = $state('')
   let overall_percent: number = $state(0)
   let current_percent: number = $state(0)
+  let processed_prompt: string = $state('')
+  let wildcards: any = $state({
+    hair: {
+      values: ['black hair', 'blonde hair'],
+      selection: 'black hair'
+    }
+  })
 
   async function handle_keypress(event: KeyboardEvent) {
     if (event.key === 'Enter') {
@@ -75,16 +83,18 @@
   }
 
   async function handle_generate() {
+    save_yaml(wildcards, 'wildcards.yaml')
     // Create WebSocket connection
     const ws = new WebSocket('ws://localhost:7801/API/GenerateText2ImageWS')
 
     ws.onopen = () => {
+      processed_prompt = process_wildcards(settings.prompt, wildcards)
       // Send parameters once connected
       ws.send(
         JSON.stringify({
           session_id: session.session_id,
           images: 1,
-          prompt: settings.prompt,
+          prompt: processed_prompt,
           negativeprompt:
             'text, watermark, low-quality, signature, monochrome, 3d, censored, muscles, lores, worst quality, censored, mosaic',
           model: settings.model,
@@ -154,9 +164,26 @@
     {#if session}
       <div class="text-zinc-400">SwarmUI version: <em>{session.version}</em></div>
     {/if}
+    <div class="mt-2 text-xs text-zinc-400">
+      Wildcards
+      {#each Object.keys(wildcards) as slot}
+        <div class="flex items-center justify-between">
+          <div class="text-zinc-600">{slot}</div>
+          <Select
+            inner_class="max-w-60 xs text-zinc-800"
+            items={wildcards[slot].values}
+            bind:value={wildcards[slot].selection}
+          />
+        </div>
+      {/each}
+    </div>
     <label class="mt-4"
-      >Prompt
-      <textarea class="h-96 w-full" bind:value={settings.prompt} onkeypress={handle_keypress}></textarea></label
+      >Template
+      <textarea class="h-80 w-full" bind:value={settings.prompt} onkeypress={handle_keypress}></textarea></label
+    >
+    <label class="mt-4"
+      >Processed prompt
+      <textarea class="h-80 w-full" bind:value={processed_prompt} onkeypress={handle_keypress}></textarea></label
     >
     {#if params.models}
       <label class="mt-4"
