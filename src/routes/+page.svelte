@@ -1,6 +1,7 @@
 <script lang="ts">
   import Select from '$lib/Select.svelte'
-  import { process_wildcards, save_yaml } from '$lib/wildcards'
+  import { process_wildcards } from '$lib/wildcards'
+  import { save_yaml, load_yaml, save_json, load_json } from '$lib/file'
   import { onMount } from 'svelte'
 
   let session: any = $state({})
@@ -83,18 +84,19 @@
   }
 
   async function handle_generate() {
+    save_json(settings, 'settings.json')
     save_yaml(wildcards, 'wildcards.yaml')
     // Create WebSocket connection
     const ws = new WebSocket('ws://localhost:7801/API/GenerateText2ImageWS')
 
     ws.onopen = () => {
-      processed_prompt = process_wildcards(settings.prompt, wildcards)
+      settings.prompt = process_wildcards(settings.template, wildcards)
       // Send parameters once connected
       ws.send(
         JSON.stringify({
           session_id: session.session_id,
           images: 1,
-          prompt: processed_prompt,
+          prompt: settings.prompt,
           negativeprompt:
             'text, watermark, low-quality, signature, monochrome, 3d, censored, muscles, lores, worst quality, censored, mosaic',
           model: settings.model,
@@ -120,7 +122,6 @@
 
     ws.onmessage = (event) => {
       const wsData = JSON.parse(event.data)
-      console.log(wsData)
       if (wsData.backend_status) {
         status_message = `Status: ${wsData.backend_status.status}`
       }
@@ -146,13 +147,21 @@
   }
 
   onMount(async () => {
+    const response = await load_yaml('wildcards.yaml')
+    if (response.success) {
+      wildcards = response.yaml_obj
+    }
+    const settings_response = await load_json('settings.json')
+    if (settings_response.success) {
+      settings = settings_response.json_obj
+    }
     session = await get_new_session()
     params = await list_t2i_params()
     images = await list_images()
     if (images.files.length > 0) {
       image = 'http://localhost:7801/View/local/' + images.files[0].src
       const metadata = JSON.parse(images.files[0].metadata)
-      settings = { ...metadata.sui_image_params }
+      settings = { ...settings, ...metadata.sui_image_params }
       console.log(settings.model)
     }
   })
@@ -164,10 +173,10 @@
     {#if session}
       <div class="text-zinc-400">SwarmUI version: <em>{session.version}</em></div>
     {/if}
-    <div class="mt-2 text-xs text-zinc-400">
+    <div class="mt-2 text-xs text-zinc-600">
       Wildcards
       {#each Object.keys(wildcards) as slot}
-        <div class="flex items-center justify-between">
+        <div class="mt-1 flex items-center justify-between">
           <div class="text-zinc-600">{slot}</div>
           <Select
             inner_class="max-w-60 xs text-zinc-800"
@@ -179,11 +188,11 @@
     </div>
     <label class="mt-4"
       >Template
-      <textarea class="h-80 w-full" bind:value={settings.prompt} onkeypress={handle_keypress}></textarea></label
+      <textarea class="h-80 w-full" bind:value={settings.template} onkeypress={handle_keypress}></textarea></label
     >
     <label class="mt-4"
       >Processed prompt
-      <textarea class="h-80 w-full" bind:value={processed_prompt} onkeypress={handle_keypress}></textarea></label
+      <textarea class="h-80 w-full" bind:value={settings.prompt} onkeypress={handle_keypress}></textarea></label
     >
     {#if params.models}
       <label class="mt-4"
