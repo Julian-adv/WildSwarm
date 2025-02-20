@@ -3,14 +3,13 @@
   import { process_wildcards } from '$lib/wildcards'
   import { save_yaml, load_yaml, save_json, load_json } from '$lib/file'
   import { onMount } from 'svelte'
-  import Dialog from '$lib/Dialog.svelte'
   import AddSlotDialog from '$lib/AddSlotDialog.svelte'
+  import type { PageProps } from './$types'
 
   let session: any = $state({})
   let image: string = $state('')
   let params: any = $state({})
   let images: any = $state({})
-  let settings: any = $state({})
   let status_message: string = $state('')
   let overall_percent: number = $state(0)
   let current_percent: number = $state(0)
@@ -20,12 +19,9 @@
     slot_name: '',
     slot_values: ['']
   })
-  let wildcards: any = $state({
-    hair: {
-      values: ['black hair', 'blonde hair'],
-      selection: 'black hair'
-    }
-  })
+  let { data }: PageProps = $props()
+  let wildcards: any = $state(data.wildcards)
+  let settings: any = $state(data.settings)
 
   async function handle_keypress(event: KeyboardEvent) {
     if (event.key === 'Enter') {
@@ -92,12 +88,12 @@
 
   async function handle_generate() {
     save_json(settings, 'settings.json')
-    save_yaml(wildcards, 'wildcards.yaml')
+    // save_yaml(wildcards, 'wildcards.yaml')
     // Create WebSocket connection
     const ws = new WebSocket('ws://localhost:7801/API/GenerateText2ImageWS')
 
     ws.onopen = () => {
-      settings.prompt = process_wildcards(settings.template, wildcards)
+      settings.prompt = process_wildcards(settings.template, wildcards, settings)
       // Send parameters once connected
       ws.send(
         JSON.stringify({
@@ -167,14 +163,18 @@
     save_yaml(wildcards, 'wildcards.yaml')
   }
 
+  function wildcards_values(slot: string) {
+    return ['disabled', 'random', ...wildcards[slot]]
+  }
+
   onMount(async () => {
-    const response = await load_yaml('wildcards.yaml')
-    if (response.success) {
-      wildcards = response.yaml_obj
-    }
-    const settings_response = await load_json('settings.json')
-    if (settings_response.success) {
-      settings = settings_response.json_obj
+    wildcards = data.wildcards
+    settings = data.settings
+    if (!settings.selection) {
+      settings.selection = {}
+      for (const slot of Object.keys(wildcards)) {
+        settings.selection[slot] = 'random'
+      }
     }
     session = await get_new_session()
     params = await list_t2i_params()
@@ -201,8 +201,8 @@
           <div class="text-zinc-600">{slot}</div>
           <Select
             inner_class="max-w-60 xs text-zinc-800"
-            items={wildcards[slot].values}
-            bind:value={wildcards[slot].selection}
+            items={wildcards_values(slot)}
+            bind:value={settings.selection[slot]}
           />
         </div>
       {/each}
