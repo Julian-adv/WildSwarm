@@ -3,6 +3,8 @@
   import { process_wildcards } from '$lib/wildcards'
   import { save_yaml, load_yaml, save_json, load_json } from '$lib/file'
   import { onMount } from 'svelte'
+  import Dialog from '$lib/Dialog.svelte'
+  import AddSlotDialog from '$lib/AddSlotDialog.svelte'
 
   let session: any = $state({})
   let image: string = $state('')
@@ -13,6 +15,11 @@
   let overall_percent: number = $state(0)
   let current_percent: number = $state(0)
   let processed_prompt: string = $state('')
+  let add_slot_dialog: any = $state({
+    open: false,
+    slot_name: '',
+    slot_values: ['']
+  })
   let wildcards: any = $state({
     hair: {
       values: ['black hair', 'blonde hair'],
@@ -146,6 +153,20 @@
     }
   }
 
+  function open_add_slot_dialog() {
+    add_slot_dialog.open = true
+  }
+
+  function add_slot() {
+    add_slot_dialog.open = false
+    wildcards[add_slot_dialog.slot_name] = {
+      values: add_slot_dialog.slot_values,
+      selection: add_slot_dialog.slot_values[0]
+    }
+    console.log(wildcards)
+    save_yaml(wildcards, 'wildcards.yaml')
+  }
+
   onMount(async () => {
     const response = await load_yaml('wildcards.yaml')
     if (response.success) {
@@ -185,14 +206,21 @@
           />
         </div>
       {/each}
+      <button class="mt-2" onclick={open_add_slot_dialog}>Add slot</button>
     </div>
+    <AddSlotDialog
+      bind:open={add_slot_dialog.open}
+      bind:slot_name={add_slot_dialog.slot_name}
+      bind:slot_values={add_slot_dialog.slot_values}
+      onok={add_slot}
+    ></AddSlotDialog>
     <label class="mt-4"
       >Template
-      <textarea class="h-80 w-full" bind:value={settings.template} onkeypress={handle_keypress}></textarea></label
+      <textarea class="mt-1 h-80 w-full" bind:value={settings.template} onkeypress={handle_keypress}></textarea></label
     >
     <label class="mt-4"
       >Processed prompt
-      <textarea class="h-80 w-full" bind:value={settings.prompt} onkeypress={handle_keypress}></textarea></label
+      <textarea class="mt-1 h-80 w-full" bind:value={settings.prompt} onkeypress={handle_keypress}></textarea></label
     >
     {#if params.models}
       <label class="mt-4"

@@ -10,29 +10,49 @@ body {
   font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
 }
 
-textarea {
-  border-color: var(--border-color);
-  @apply mt-1 rounded border-1 p-1;
+@layer base {
+  h2 {
+    @apply text-xl font-bold;
+  }
+
+  textarea,
+  input {
+    border-color: var(--border-color);
+    @apply rounded border-1 p-1;
+  }
+
+  button:focus,
+  select:focus,
+  input:focus,
+  textarea:focus {
+    border-color: var(--focus-color);
+    @apply ring-2 ring-sky-600 outline-none;
+  }
+
+  button,
+  select {
+    border-color: var(--border-color);
+    @apply cursor-pointer rounded border-1 px-2 py-1;
+  }
+
+  button.primary {
+    @apply border-sky-600 bg-sky-600 text-white;
+  }
+
+  button.primary:hover {
+    @apply bg-sky-700;
+  }
+
+  select.xs {
+    @apply px-1 py-[1px];
+  }
+
+  button:hover,
+  select:hover {
+    @apply bg-stone-100;
+  }
 }
 
-button:focus,
-select:focus,
-textarea:focus {
-  border-color: var(--focus-color);
-  @apply ring-2 ring-sky-600 outline-none;
-}
-
-button,
-select {
-  border-color: var(--border-color);
-  @apply cursor-pointer rounded border-1 px-2 py-1;
-}
-
-select.xs {
-  @apply px-1 py-[1px];
-}
-
-button:hover,
-select:hover {
-  @apply bg-stone-100;
+@theme {
+  --color-primary: var(--color-sky-600);
 }
