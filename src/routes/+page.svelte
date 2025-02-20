@@ -1,10 +1,12 @@
 <script lang="ts">
   import Select from '$lib/Select.svelte'
+  import DropDown from '$lib/DropDown.svelte'
   import { process_wildcards } from '$lib/wildcards'
-  import { save_yaml, load_yaml, save_json, load_json } from '$lib/file'
+  import { save_yaml, save_json } from '$lib/file'
   import { onMount } from 'svelte'
   import AddSlotDialog from '$lib/AddSlotDialog.svelte'
   import type { PageProps } from './$types'
+  import { PencilSquare } from 'svelte-heros-v2'
 
   let session: any = $state({})
   let image: string = $state('')
@@ -163,6 +165,10 @@
     save_yaml(wildcards, 'wildcards.yaml')
   }
 
+  function edit_slot(slot: string) {
+    return () => {}
+  }
+
   function wildcards_values(slot: string) {
     return ['disabled', 'random', ...wildcards[slot]]
   }
@@ -197,13 +203,17 @@
     <div class="mt-2 text-xs text-zinc-600">
       Wildcards
       {#each Object.keys(wildcards) as slot}
-        <div class="mt-1 flex items-center justify-between">
+        <div class="mt-1 flex items-center gap-1">
           <div class="text-zinc-600">{slot}</div>
-          <Select
-            inner_class="max-w-60 xs text-zinc-800"
+          <div class="grow-1"></div>
+          <DropDown
+            iclass="max-w-80 xs ring-0 text-zinc-800"
             items={wildcards_values(slot)}
             bind:value={settings.selection[slot]}
           />
+          <button class="border-none p-0" onclick={edit_slot(slot)}
+            ><PencilSquare size="16" color="var(--color-zinc-500)" /></button
+          >
         </div>
       {/each}
       <button class="mt-2" onclick={open_add_slot_dialog}>Add slot</button>

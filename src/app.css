@@ -43,16 +43,18 @@ body {
     @apply bg-sky-700;
   }
 
-  select.xs {
+  select.xs,
+  button.xs {
     @apply px-1 py-[1px];
   }
 
   button:hover,
   select:hover {
-    @apply bg-stone-100;
+    @apply bg-sky-100;
   }
 }
 
 @theme {
   --color-primary: var(--color-sky-600);
+  --color-background: var(--color-stone-50);
 }
