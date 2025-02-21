@@ -15,13 +15,20 @@
   let status_message: string = $state('')
   let overall_percent: number = $state(0)
   let current_percent: number = $state(0)
-  let slot_dialog: any = $state({
+  let slot_dialog: {
+    open: boolean
+    title: string
+    slot_name: string
+    slot_values: string[]
+    ok_button: string
+    on_ok: (slot_name: string, slot_values: string[]) => string
+  } = $state({
     open: false,
     title: '',
     slot_name: '',
     slot_values: [''],
     ok_button: '',
-    on_ok: () => {}
+    on_ok: () => ''
   })
   let { data }: PageProps = $props()
   let wildcards: any = $state(data.wildcards)
@@ -162,12 +169,26 @@
     slot_dialog.on_ok = add_slot_ok
   }
 
-  function add_slot_ok() {
-    slot_dialog.open = false
-    wildcards[slot_dialog.slot_name] = [...slot_dialog.slot_values]
-    settings.selection[slot_dialog.slot_name] = 'random'
+  function check_slot_name(slot: string): string {
+    if (!slot) {
+      return 'Slot name is required'
+    }
+    if (wildcards[slot]) {
+      return 'Slot name already exists'
+    }
+    return ''
+  }
+
+  function add_slot_ok(slot_name: string, slot_values: string[]): string {
+    const err = check_slot_name(slot_name)
+    if (err) {
+      return err
+    }
+    wildcards[slot_name] = [...slot_values]
+    settings.selection[slot_name] = 'random'
     save_yaml(wildcards, 'wildcards.yaml')
     save_json(settings, 'settings.json')
+    return ''
   }
 
   function edit_slot(slot: string) {
@@ -181,10 +202,19 @@
     }
   }
 
-  function edit_slot_ok() {
-    slot_dialog.open = false
-    wildcards[slot_dialog.slot_name] = [...slot_dialog.slot_values]
+  function edit_slot_ok(slot_name: string, slot_values: string[]): string {
+    const err = check_slot_name(slot_name)
+    if (err) {
+      return err
+    }
+    wildcards[slot_name] = [...slot_values]
+    if (slot_name !== slot_dialog.slot_name) {
+      delete settings.selection[slot_dialog.slot_name]
+      settings.selection[slot_name] = 'random'
+    }
     save_yaml(wildcards, 'wildcards.yaml')
+    save_json(settings, 'settings.json')
+    return ''
   }
 
   function wildcards_values(slot: string) {
@@ -239,10 +269,10 @@
     <EditSlotDialog
       bind:open={slot_dialog.open}
       title={slot_dialog.title}
-      bind:slot_name={slot_dialog.slot_name}
-      bind:slot_values={slot_dialog.slot_values}
+      slot_name={slot_dialog.slot_name}
+      slot_values={slot_dialog.slot_values}
       ok_button={slot_dialog.ok_button}
-      onok={slot_dialog.on_ok}
+      on_ok={slot_dialog.on_ok}
     ></EditSlotDialog>
     <label class="mt-4"
       >Template

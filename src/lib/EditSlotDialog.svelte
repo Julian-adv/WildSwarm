@@ -7,17 +7,10 @@
     slot_name: string
     slot_values: string[]
     ok_button: string
-    onok: () => void
+    on_ok: (slot_name: string, slot_values: string[]) => string
   }
 
-  let {
-    open = $bindable(),
-    title,
-    slot_name = $bindable(),
-    slot_values = $bindable(),
-    ok_button,
-    onok
-  }: Props = $props()
+  let { open = $bindable(), title, slot_name, slot_values, ok_button, on_ok }: Props = $props()
   let slot_name_input: HTMLInputElement
   let last_value_input: HTMLInputElement
 
@@ -45,9 +38,13 @@
       last_value_input = element
     }
   }
+
+  function internal_on_ok() {
+    return on_ok?.(slot_name, slot_values)
+  }
 </script>
 
-<Dialog bind:open {title} {ok_button} {onok}>
+<Dialog bind:open {title} {ok_button} on_ok={internal_on_ok}>
   <div class="flex flex-col">
     <div class="mt-2 grid grid-cols-[10rem_1fr] gap-2">
       <div class="">Name</div>
