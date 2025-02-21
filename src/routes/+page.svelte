@@ -157,7 +157,7 @@
     slot_dialog.open = true
     slot_dialog.title = 'Add slot'
     slot_dialog.slot_name = ''
-    slot_dialog.slot_values = []
+    slot_dialog.slot_values = ['']
     slot_dialog.ok_button = 'Add'
     slot_dialog.on_ok = add_slot_ok
   }
@@ -165,7 +165,9 @@
   function add_slot_ok() {
     slot_dialog.open = false
     wildcards[slot_dialog.slot_name] = [...slot_dialog.slot_values]
+    settings.selection[slot_dialog.slot_name] = 'random'
     save_yaml(wildcards, 'wildcards.yaml')
+    save_json(settings, 'settings.json')
   }
 
   function edit_slot(slot: string) {

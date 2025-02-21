@@ -19,6 +19,7 @@
     onok
   }: Props = $props()
   let slot_name_input: HTMLInputElement
+  let last_value_input: HTMLInputElement
 
   $effect(() => {
     if (open) {
@@ -28,6 +29,21 @@
 
   function add_value() {
     slot_values = [...slot_values, '']
+    // Focus the new input after the next render
+    setTimeout(() => last_value_input?.focus(), 0)
+  }
+
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.shiftKey && event.key === 'Enter') {
+      event.preventDefault()
+      add_value()
+    }
+  }
+
+  function handleInputRef(element: HTMLInputElement, index: number) {
+    if (index === slot_values.length - 1) {
+      last_value_input = element
+    }
   }
 </script>
 
@@ -39,7 +55,7 @@
       <div class="">Values</div>
       <div class="flex flex-col gap-2">
         {#each slot_values as _, i (i)}
-          <input class="xs w-full" bind:value={slot_values[i]} />
+          <input class="xs w-full" bind:value={slot_values[i]} use:handleInputRef={i} onkeydown={handleKeydown} />
         {/each}
         <button class="w-40" onclick={add_value}
           >Add
