@@ -14,11 +14,15 @@
     open = false
   }
 
+  export function set_error_message(message: string) {
+    error_message = message
+    setTimeout(() => (error_message = ''), 5000)
+  }
+
   function ok_clicked() {
     const err = on_ok?.()
     if (err) {
-      error_message = err
-      setTimeout(() => (error_message = ''), 5000)
+      set_error_message(err)
     } else {
       close_dialog()
     }

@@ -22,13 +22,15 @@
     slot_values: string[]
     ok_button: string
     on_ok: (slot_name: string, slot_values: string[]) => string
+    on_delete?: (slot_name: string) => void
   } = $state({
     open: false,
     title: '',
     slot_name: '',
     slot_values: [''],
     ok_button: '',
-    on_ok: () => ''
+    on_ok: () => '',
+    on_delete: () => ''
   })
   let { data }: PageProps = $props()
   let wildcards: any = $state(data.wildcards)
@@ -167,6 +169,7 @@
     slot_dialog.slot_values = ['']
     slot_dialog.ok_button = 'Add'
     slot_dialog.on_ok = add_slot_ok
+    slot_dialog.on_delete = undefined
   }
 
   function check_slot_name(slot: string): string {
@@ -199,6 +202,7 @@
       slot_dialog.slot_values = [...wildcards[slot]]
       slot_dialog.ok_button = 'Save'
       slot_dialog.on_ok = edit_slot_ok
+      slot_dialog.on_delete = delete_slot
     }
   }
 
@@ -212,6 +216,20 @@
       delete settings.selection[slot_dialog.slot_name]
       settings.selection[slot_name] = 'random'
     }
+    save_yaml(wildcards, 'wildcards.yaml')
+    save_json(settings, 'settings.json')
+    return ''
+  }
+
+  function delete_slot(slot: string) {
+    if (!slot) {
+      return 'Slot name is required'
+    }
+    if (!wildcards[slot]) {
+      return 'Slot name not found'
+    }
+    delete wildcards[slot]
+    delete settings.selection[slot]
     save_yaml(wildcards, 'wildcards.yaml')
     save_json(settings, 'settings.json')
     return ''
@@ -273,6 +291,7 @@
       slot_values={slot_dialog.slot_values}
       ok_button={slot_dialog.ok_button}
       on_ok={slot_dialog.on_ok}
+      on_delete={slot_dialog.on_delete}
     ></EditSlotDialog>
     <label class="mt-4"
       >Template
