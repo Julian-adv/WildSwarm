@@ -170,7 +170,7 @@
     {#if session}
       <div class="text-zinc-400">SwarmUI version: <em>{session.version}</em></div>
     {/if}
-    <SlotList {wildcards} {settings} />
+    <SlotList bind:wildcards bind:settings />
     <label class="mt-4"
       >Template
       <textarea class="mt-1 h-80 w-full" bind:value={settings.template} onkeypress={handle_keypress}></textarea></label

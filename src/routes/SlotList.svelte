@@ -9,7 +9,7 @@
     settings: any
   }
 
-  let { wildcards, settings }: Props = $props()
+  let { wildcards = $bindable(), settings = $bindable() }: Props = $props()
 
   let slot_dialog: {
     open: boolean
@@ -28,6 +28,48 @@
     on_ok: () => '',
     on_delete: () => ''
   })
+
+  let draggedItem: string | null = null
+  let draggedOverItem: string | null = $state(null)
+
+  function handleDragStart(slot: string) {
+    draggedItem = slot
+  }
+
+  function handleDragOver(e: DragEvent, slot: string) {
+    e.preventDefault()
+    draggedOverItem = slot
+  }
+
+  function handleDrop(e: DragEvent) {
+    e.preventDefault()
+    if (!draggedItem || !draggedOverItem || draggedItem === draggedOverItem) {
+      draggedItem = null
+      return
+    }
+
+    const slots = Object.keys(wildcards)
+    const fromIndex = slots.indexOf(draggedItem)
+    const toIndex = slots.indexOf(draggedOverItem)
+
+    // Create new wildcards object with reordered keys
+    const newWildcards: typeof wildcards = {}
+    const reorderedSlots = [...slots]
+    reorderedSlots.splice(fromIndex, 1)
+    // If moving forward, we need to adjust the target index
+    const adjustedToIndex = toIndex > fromIndex ? toIndex - 1 : toIndex
+    reorderedSlots.splice(adjustedToIndex, 0, draggedItem)
+
+    reorderedSlots.forEach((slot) => {
+      newWildcards[slot] = wildcards[slot]
+    })
+
+    wildcards = newWildcards
+    save_yaml(wildcards, 'wildcards.yaml')
+
+    draggedItem = null
+    draggedOverItem = null
+  }
 
   function check_slot_name(slot: string): string {
     if (!slot) {
@@ -74,14 +116,14 @@
   }
 
   function edit_slot_ok(slot_name: string, slot_values: string[]): string {
-    const err = check_slot_name(slot_name)
-    if (err) {
-      return err
+    if (!slot_name) {
+      return 'Slot name is required'
     }
     wildcards[slot_name] = [...slot_values]
     if (slot_name !== slot_dialog.slot_name) {
       delete settings.selection[slot_dialog.slot_name]
       settings.selection[slot_name] = 'random'
+      settings = settings
     }
     save_yaml(wildcards, 'wildcards.yaml')
     save_json(settings, 'settings.json')
@@ -96,7 +138,9 @@
       return 'Slot name not found'
     }
     delete wildcards[slot]
+    wildcards = wildcards
     delete settings.selection[slot]
+    settings = settings
     save_yaml(wildcards, 'wildcards.yaml')
     save_json(settings, 'settings.json')
     return ''
@@ -109,27 +153,36 @@
 
 <div class="mt-2 text-xs text-zinc-600">
   Wildcards
-  {#each Object.keys(wildcards) as slot}
-    <div class="mt-1 flex items-center gap-1">
-      <div class="text-zinc-600">{slot}</div>
-      <div class="grow-1"></div>
-      <DropDown
-        iclass="max-w-80 xs ring-0 text-zinc-800"
-        items={wildcards_values(slot)}
-        bind:value={settings.selection[slot]}
-      />
-      <button class="border-none p-0" onclick={edit_slot(slot)}
-        ><PencilSquare size="16" color="var(--color-zinc-500)" /></button
+  <div role="list">
+    {#each Object.keys(wildcards) as slot}
+      <div
+        role="listitem"
+        class="mt-1 flex cursor-move items-center gap-1 {draggedOverItem === slot ? 'border-t-2' : ''}"
+        draggable="true"
+        ondragstart={() => handleDragStart(slot)}
+        ondragover={(e) => handleDragOver(e, slot)}
+        ondrop={handleDrop}
       >
-    </div>
-  {/each}
+        <div class="text-zinc-600">{slot}</div>
+        <div class="grow-1"></div>
+        <DropDown
+          iclass="max-w-80 xs ring-0 text-zinc-800"
+          items={wildcards_values(slot)}
+          bind:value={settings.selection[slot]}
+        />
+        <button class="border-none p-0" onclick={edit_slot(slot)}
+          ><PencilSquare size="16" color="var(--color-zinc-500)" /></button
+        >
+      </div>
+    {/each}
+  </div>
   <button class="mt-2" onclick={add_slot}>Add slot</button>
 </div>
 <EditSlotDialog
   bind:open={slot_dialog.open}
   title={slot_dialog.title}
   slot_name={slot_dialog.slot_name}
-  slot_values={slot_dialog.slot_values}
+  bind:slot_values={slot_dialog.slot_values}
   ok_button={slot_dialog.ok_button}
   on_ok={slot_dialog.on_ok}
   on_delete={slot_dialog.on_delete}

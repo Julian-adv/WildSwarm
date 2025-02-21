@@ -12,7 +12,7 @@
     on_delete?: (slot_name: string) => void
   }
 
-  let { open = $bindable(), title, slot_name, slot_values, ok_button, on_ok, on_delete }: Props = $props()
+  let { open = $bindable(), title, slot_name, slot_values = $bindable(), ok_button, on_ok, on_delete }: Props = $props()
   let slot_name_input: HTMLInputElement
   let last_value_input: HTMLInputElement
   let dialog: Dialog
