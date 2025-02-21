@@ -1,7 +1,7 @@
 <script lang="ts">
   import { save_json, save_yaml } from '$lib/file'
   import DropDown from '$lib/DropDown.svelte'
-  import EditSlotDialog from '$lib/EditSlotDialog.svelte'
+  import EditSlotDialog from './EditSlotDialog.svelte'
   import { PencilSquare } from 'svelte-heros-v2'
 
   interface Props {
