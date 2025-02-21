@@ -8,6 +8,7 @@
 
   let session: any = $state({})
   let image: string = $state('')
+  let preview_image: string = $state('')
   let params: any = $state({})
   let images: any = $state({})
   let status_message: string = $state('')
@@ -126,11 +127,15 @@
         status_message = ''
         overall_percent = Math.round(wsData.gen_progress.overall_percent * 100)
         current_percent = Math.round(wsData.gen_progress.current_percent * 100)
+        if (wsData.gen_progress.preview) {
+          preview_image = wsData.gen_progress.preview
+        }
       }
       if (wsData.image) {
         image = 'http://localhost:7801/' + wsData.image
         ws.close()
         overall_percent = 0
+        preview_image = ''
       }
     }
 
@@ -165,12 +170,13 @@
 </script>
 
 <div class="grid grid-cols-[20rem_1fr] gap-2">
-  <div class="flex flex-col">
+  <div class="scrollbar-none flex max-h-[calc(100dvh-2rem)] flex-col overflow-y-auto">
     <h1 class="text-3xl font-bold">Wild Swarm</h1>
     {#if session}
       <div class="text-zinc-400">SwarmUI version: <em>{session.version}</em></div>
     {/if}
     <SlotList bind:wildcards bind:settings />
+    <button class="primary mt-4 border-1" onclick={handle_generate}>Generate</button>
     <label class="mt-4"
       >Template
       <textarea class="mt-1 h-80 w-full" bind:value={settings.template} onkeypress={handle_keypress}></textarea></label
@@ -196,7 +202,6 @@
           bind:value={settings.refinermodel}
         />
       </label>
-      <button class="mt-4 border-1" onclick={handle_generate}>Generate</button>
     {/if}
   </div>
   <div>
@@ -204,6 +209,9 @@
       <img src={image} alt="generated" class="max-h-[calc(100vh-2rem)]" />
       {#if status_message}
         <div class="absolute bottom-0 left-0 p-1">{status_message}</div>
+      {/if}
+      {#if preview_image}
+        <img src={preview_image} alt="preview" class="absolute bottom-0 left-0 h-50" />
       {/if}
       {#if overall_percent > 0}
         <div class="absolute right-0 bottom-0 left-0 h-2">
@@ -214,3 +222,16 @@
     </div>
   </div>
 </div>
+
+<style>
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .scrollbar-none {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+</style>

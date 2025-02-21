@@ -14,6 +14,7 @@
   let slot_dialog: {
     open: boolean
     title: string
+    original_slot_name: string
     slot_name: string
     slot_values: string[]
     ok_button: string
@@ -22,6 +23,7 @@
   } = $state({
     open: false,
     title: '',
+    original_slot_name: '',
     slot_name: '',
     slot_values: [''],
     ok_button: '',
@@ -107,6 +109,7 @@
     return () => {
       slot_dialog.open = true
       slot_dialog.title = 'Edit slot'
+      slot_dialog.original_slot_name = slot
       slot_dialog.slot_name = slot
       slot_dialog.slot_values = [...wildcards[slot]]
       slot_dialog.ok_button = 'Save'
@@ -120,8 +123,8 @@
       return 'Slot name is required'
     }
     wildcards[slot_name] = [...slot_values]
-    if (slot_name !== slot_dialog.slot_name) {
-      delete settings.selection[slot_dialog.slot_name]
+    if (slot_name !== slot_dialog.original_slot_name) {
+      delete settings.selection[slot_dialog.original_slot_name]
       settings.selection[slot_name] = 'random'
       settings = settings
     }
@@ -181,7 +184,7 @@
 <EditSlotDialog
   bind:open={slot_dialog.open}
   title={slot_dialog.title}
-  slot_name={slot_dialog.slot_name}
+  bind:slot_name={slot_dialog.slot_name}
   bind:slot_values={slot_dialog.slot_values}
   ok_button={slot_dialog.ok_button}
   on_ok={slot_dialog.on_ok}
