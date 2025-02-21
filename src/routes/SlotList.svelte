@@ -151,8 +151,12 @@
   }
 </script>
 
-<div class="mt-2 text-xs text-zinc-600">
-  Wildcards
+<div class="mt-2 text-xs">
+  <div class="flex flex-row">
+    <div class="font-bold">Slot</div>
+    <div class="grow-1"></div>
+    <div class="pr-6 font-bold">Value</div>
+  </div>
   <div role="list">
     {#each Object.keys(wildcards) as slot}
       <div
@@ -163,13 +167,9 @@
         ondragover={(e) => handleDragOver(e, slot)}
         ondrop={handleDrop}
       >
-        <div class="text-zinc-600">{slot}</div>
+        <div>{slot}</div>
         <div class="grow-1"></div>
-        <DropDown
-          iclass="max-w-80 xs ring-0 text-zinc-800"
-          items={wildcards_values(slot)}
-          bind:value={settings.selection[slot]}
-        />
+        <DropDown iclass="max-w-80 xs ring-0" items={wildcards_values(slot)} bind:value={settings.selection[slot]} />
         <button class="border-none p-0" onclick={edit_slot(slot)}
           ><PencilSquare size="16" color="var(--color-zinc-500)" /></button
         >
