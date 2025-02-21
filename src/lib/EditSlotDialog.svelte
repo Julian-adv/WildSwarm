@@ -1,16 +1,23 @@
 <script lang="ts">
   import Dialog from './Dialog.svelte'
-  import { onMount } from 'svelte'
-  import ShiftIcon from './keyboard-shift-svgrepo-com.svg'
-  import EnterIcon from './keyboard-enter-svgrepo-com.svg'
 
   interface Props {
     open: boolean
+    title: string
     slot_name: string
     slot_values: string[]
+    ok_button: string
     onok: () => void
   }
-  let { open = $bindable(), slot_name = $bindable(), slot_values = $bindable(), onok }: Props = $props()
+
+  let {
+    open = $bindable(),
+    title,
+    slot_name = $bindable(),
+    slot_values = $bindable(),
+    ok_button,
+    onok
+  }: Props = $props()
   let slot_name_input: HTMLInputElement
 
   $effect(() => {
@@ -24,7 +31,7 @@
   }
 </script>
 
-<Dialog bind:open title="Add slot" ok_button="Add slot" {onok}>
+<Dialog bind:open {title} {ok_button} {onok}>
   <div class="flex flex-col">
     <div class="mt-2 grid grid-cols-[10rem_1fr] gap-2">
       <div class="">Name</div>

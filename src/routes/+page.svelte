@@ -4,7 +4,7 @@
   import { process_wildcards } from '$lib/wildcards'
   import { save_yaml, save_json } from '$lib/file'
   import { onMount } from 'svelte'
-  import AddSlotDialog from '$lib/AddSlotDialog.svelte'
+  import EditSlotDialog from '$lib/EditSlotDialog.svelte'
   import type { PageProps } from './$types'
   import { PencilSquare } from 'svelte-heros-v2'
 
@@ -15,11 +15,13 @@
   let status_message: string = $state('')
   let overall_percent: number = $state(0)
   let current_percent: number = $state(0)
-  let processed_prompt: string = $state('')
-  let add_slot_dialog: any = $state({
+  let slot_dialog: any = $state({
     open: false,
+    title: '',
     slot_name: '',
-    slot_values: ['']
+    slot_values: [''],
+    ok_button: '',
+    on_ok: () => {}
   })
   let { data }: PageProps = $props()
   let wildcards: any = $state(data.wildcards)
@@ -151,22 +153,36 @@
     }
   }
 
-  function open_add_slot_dialog() {
-    add_slot_dialog.open = true
+  function add_slot() {
+    slot_dialog.open = true
+    slot_dialog.title = 'Add slot'
+    slot_dialog.slot_name = ''
+    slot_dialog.slot_values = []
+    slot_dialog.ok_button = 'Add'
+    slot_dialog.on_ok = add_slot_ok
   }
 
-  function add_slot() {
-    add_slot_dialog.open = false
-    wildcards[add_slot_dialog.slot_name] = {
-      values: add_slot_dialog.slot_values,
-      selection: add_slot_dialog.slot_values[0]
-    }
-    console.log(wildcards)
+  function add_slot_ok() {
+    slot_dialog.open = false
+    wildcards[slot_dialog.slot_name] = [...slot_dialog.slot_values]
     save_yaml(wildcards, 'wildcards.yaml')
   }
 
   function edit_slot(slot: string) {
-    return () => {}
+    return () => {
+      slot_dialog.open = true
+      slot_dialog.title = 'Edit slot'
+      slot_dialog.slot_name = slot
+      slot_dialog.slot_values = [...wildcards[slot]]
+      slot_dialog.ok_button = 'Save'
+      slot_dialog.on_ok = edit_slot_ok
+    }
+  }
+
+  function edit_slot_ok() {
+    slot_dialog.open = false
+    wildcards[slot_dialog.slot_name] = [...slot_dialog.slot_values]
+    save_yaml(wildcards, 'wildcards.yaml')
   }
 
   function wildcards_values(slot: string) {
@@ -216,14 +232,16 @@
           >
         </div>
       {/each}
-      <button class="mt-2" onclick={open_add_slot_dialog}>Add slot</button>
+      <button class="mt-2" onclick={add_slot}>Add slot</button>
     </div>
-    <AddSlotDialog
-      bind:open={add_slot_dialog.open}
-      bind:slot_name={add_slot_dialog.slot_name}
-      bind:slot_values={add_slot_dialog.slot_values}
-      onok={add_slot}
-    ></AddSlotDialog>
+    <EditSlotDialog
+      bind:open={slot_dialog.open}
+      title={slot_dialog.title}
+      bind:slot_name={slot_dialog.slot_name}
+      bind:slot_values={slot_dialog.slot_values}
+      ok_button={slot_dialog.ok_button}
+      onok={slot_dialog.on_ok}
+    ></EditSlotDialog>
     <label class="mt-4"
       >Template
       <textarea class="mt-1 h-80 w-full" bind:value={settings.template} onkeypress={handle_keypress}></textarea></label
