@@ -166,11 +166,12 @@
     {#each Object.keys(wildcards) as slot, index}
       <div
         role="listitem"
-        class="mt-1 flex cursor-move items-center gap-1 {draggedOverItem === slot ? 'border-t-2' : ''} even:bg-slate-50"
+        class="mt-1 flex cursor-move items-center gap-1 px-1 even:bg-slate-50"
         draggable="true"
         ondragstart={() => handleDragStart(slot)}
         ondragover={(e) => handleDragOver(e, slot)}
         ondrop={handleDrop}
+        class:drag-over={draggedOverItem === slot}
       >
         <div>{slot}</div>
         <div class="grow-1"></div>
@@ -181,7 +182,7 @@
       </div>
     {/each}
   </div>
-  <button class="mt-2" onclick={add_slot}>Add slot</button>
+  <button class="mt-2 ml-1" onclick={add_slot}>Add slot</button>
 </div>
 <EditSlotDialog
   bind:open={slot_dialog.open}
@@ -192,3 +193,19 @@
   on_ok={slot_dialog.on_ok}
   on_delete={slot_dialog.on_delete}
 ></EditSlotDialog>
+
+<style>
+  .drag-over {
+    position: relative;
+  }
+  .drag-over::after {
+    content: '';
+    position: absolute;
+    left: 0px;
+    right: 0px;
+    top: -2px;
+    height: 2px;
+    background-color: #4299e1;
+    transform: translateY(-50%);
+  }
+</style>

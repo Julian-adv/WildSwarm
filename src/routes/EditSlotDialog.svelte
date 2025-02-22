@@ -71,6 +71,38 @@
       slot_values = slot_values
     }
   }
+
+  let drag_source_index: number | null = null
+  let drag_target_index: number | null = $state(null)
+
+  function handleDragStart(index: number) {
+    return (e: DragEvent) => {
+      drag_source_index = index
+      e.dataTransfer?.setData('text/plain', '') // Required for Firefox
+    }
+  }
+
+  function handleDragOver(index: number) {
+    return (e: DragEvent) => {
+      e.preventDefault()
+      drag_target_index = index
+    }
+  }
+
+  function handleDragEnd() {
+    if (drag_source_index !== null && drag_target_index !== null && drag_source_index !== drag_target_index) {
+      const [moved_item] = slot_values.splice(drag_source_index, 1)
+      const adjusted_target = drag_target_index > drag_source_index ? drag_target_index - 1 : drag_target_index
+      slot_values.splice(adjusted_target, 0, moved_item)
+      slot_values = slot_values
+    }
+    drag_source_index = null
+    drag_target_index = null
+  }
+
+  function handleDragLeave() {
+    drag_target_index = null
+  }
 </script>
 
 <Dialog bind:this={dialog} bind:open {title} {ok_button} on_ok={internal_on_ok}>
@@ -82,21 +114,52 @@
         <button class="border-none p-1" onclick={delete_slot}><Trash size="20" /></button>
       {/if}
     </div>
-    <div class="mt-2 grid grid-cols-[1rem_1fr_1fr_2rem] items-center gap-1">
-      <div></div>
-      <div class="">Values</div>
-      <div class="">Disables</div>
-      <div></div>
+    <div class="mt-2 flex flex-col gap-1">
+      <div class="flex gap-1">
+        <div class="w-3"></div>
+        <div class="grow-1">Values</div>
+        <div class="grow-1">Disables</div>
+        <div class="w-3"></div>
+      </div>
       {#each slot_values as _, i (i)}
-        <div class="text-right">-</div>
-        <input class="xs w-full" bind:value={slot_values[i][0]} use:handleInputRef={i} onkeydown={handleKeydown} />
-        <input class="xs w-full" bind:value={slot_values[i][1]} />
-        <button class="border-none p-1" onclick={delete_value(i)}><Trash size="20" /></button>
+        <div
+          class="flex cursor-move items-center gap-1 text-right"
+          draggable="true"
+          ondragstart={handleDragStart(i)}
+          ondragover={handleDragOver(i)}
+          ondragleave={handleDragLeave}
+          ondragend={handleDragEnd}
+          class:drag-over={drag_target_index === i}
+          role="button"
+          aria-label="Drag to reorder"
+          tabindex="0"
+        >
+          <div class="w-2 min-w-2">⋮</div>
+          <input class="xs w-full" bind:value={slot_values[i][0]} use:handleInputRef={i} onkeydown={handleKeydown} />
+          <input class="xs w-full" bind:value={slot_values[i][1]} />
+          <button class="border-none p-1" onclick={delete_value(i)}><Trash size="20" /></button>
+        </div>
       {/each}
-      <button class="w-40" onclick={add_value}
+      <button class="ml-3 w-40" onclick={add_value}
         >Add
         <div class="inline font-mono">⇧+⏎</div>
       </button>
     </div>
   </div>
 </Dialog>
+
+<style>
+  .drag-over {
+    position: relative;
+  }
+  .drag-over::after {
+    content: '';
+    position: absolute;
+    left: 0px;
+    right: 0px;
+    top: -2px;
+    height: 2px;
+    background-color: #4299e1;
+    transform: translateY(-50%);
+  }
+</style>
