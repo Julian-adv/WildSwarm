@@ -176,17 +176,18 @@
       <div class="text-zinc-400">SwarmUI version: <em>{session.version}</em></div>
     {/if}
     <SlotList bind:wildcards bind:settings />
-    <button class="primary mt-4 border-1" onclick={handle_generate}>Generate</button>
-    <label class="mt-4"
+    <button class="primary mt-4 border-1 text-sm" onclick={handle_generate}>Generate</button>
+    <label class="mt-2 text-sm"><input type="checkbox" bind:checked={settings.auto_template} />Auto template</label>
+    <label class="mt-2 text-sm"
       >Template
-      <textarea class="mt-1 h-80 w-full" bind:value={settings.template} onkeypress={handle_keypress}></textarea></label
+      <textarea class="mt-1 h-60 w-full" bind:value={settings.template} onkeypress={handle_keypress}></textarea></label
     >
-    <label class="mt-4"
+    <label class="mt-2 text-sm"
       >Processed prompt
-      <textarea class="mt-1 h-80 w-full" bind:value={settings.prompt} onkeypress={handle_keypress}></textarea></label
+      <textarea class="mt-1 h-60 w-full" bind:value={settings.prompt} onkeypress={handle_keypress}></textarea></label
     >
     {#if params.models}
-      <label class="mt-4"
+      <label class="mt-2 text-sm"
         >Model
         <Select
           inner_class="max-w-80"
@@ -194,7 +195,7 @@
           bind:value={settings.model}
         />
       </label>
-      <label class="mt-4"
+      <label class="mt-2 text-sm"
         >Refiner Model
         <Select
           inner_class="max-w-80"
@@ -208,7 +209,7 @@
     <div class="relative inline-block align-top leading-none">
       <img src={image} alt="generated" class="max-h-[calc(100vh-2rem)]" />
       {#if status_message}
-        <div class="absolute bottom-0 left-0 p-1">{status_message}</div>
+        <div class="absolute bottom-0 left-0 p-1 text-sm">{status_message}</div>
       {/if}
       {#if preview_image}
         <img src={preview_image} alt="preview" class="absolute bottom-0 left-0 h-50" />

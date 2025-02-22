@@ -52,6 +52,10 @@ body {
   select:hover {
     @apply bg-sky-100;
   }
+
+  input[type='checkbox'] {
+    @apply mr-1 ring-0;
+  }
 }
 
 @theme {

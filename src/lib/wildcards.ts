@@ -1,5 +1,13 @@
 export function process_wildcards(template: string, wildcards: { [key: string]: string[] }, settings: any): string {
-  let result = template
+  let result = ''
+  if (settings.auto_template) {
+    result = ''
+    for (const key of Object.keys(wildcards)) {
+      result += `__${key}__,`
+    }
+  } else {
+    result = template
+  }
   for (const [key, values] of Object.entries(wildcards)) {
     const selection = settings.selection[key]
     let value = ''

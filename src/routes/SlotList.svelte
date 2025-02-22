@@ -124,6 +124,7 @@
     }
     wildcards[slot_name] = [...slot_values]
     if (slot_name !== slot_dialog.original_slot_name) {
+      delete wildcards[slot_dialog.original_slot_name]
       delete settings.selection[slot_dialog.original_slot_name]
       settings.selection[slot_name] = 'random'
       settings = settings
@@ -161,10 +162,10 @@
     <div class="pr-6 font-bold">Value</div>
   </div>
   <div role="list">
-    {#each Object.keys(wildcards) as slot}
+    {#each Object.keys(wildcards) as slot, index}
       <div
         role="listitem"
-        class="mt-1 flex cursor-move items-center gap-1 {draggedOverItem === slot ? 'border-t-2' : ''}"
+        class="mt-1 flex cursor-move items-center gap-1 {draggedOverItem === slot ? 'border-t-2' : ''} even:bg-slate-50"
         draggable="true"
         ondragstart={() => handleDragStart(slot)}
         ondragover={(e) => handleDragOver(e, slot)}
