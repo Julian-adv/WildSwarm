@@ -6,9 +6,9 @@
     open: boolean
     title: string
     slot_name: string
-    slot_values: string[]
+    slot_values: [string, string][]
     ok_button: string
-    on_ok: (slot_name: string, slot_values: string[]) => string
+    on_ok: (slot_name: string, slot_values: [string, string][]) => string
     on_delete?: (slot_name: string) => void
   }
 
@@ -16,7 +16,7 @@
     open = $bindable(),
     title,
     slot_name = $bindable(),
-    slot_values = $bindable(),
+    slot_values = $bindable([['', '']]),
     ok_button,
     on_ok,
     on_delete
@@ -32,7 +32,7 @@
   })
 
   function add_value() {
-    slot_values = [...slot_values, '']
+    slot_values = [...slot_values, ['', '']]
     // Focus the new input after the next render
     setTimeout(() => last_value_input?.focus(), 0)
   }
@@ -64,28 +64,39 @@
       }
     }
   }
+
+  function delete_value(i: number) {
+    return () => {
+      slot_values.splice(i, 1)
+      slot_values = slot_values
+    }
+  }
 </script>
 
 <Dialog bind:this={dialog} bind:open {title} {ok_button} on_ok={internal_on_ok}>
-  <div class="flex flex-col">
-    <div class="mt-2 grid grid-cols-[10rem_1fr] gap-2">
+  <div class="flex flex-col text-sm">
+    <div class="mt-2 flex items-center gap-2">
       <div class="">Name</div>
-      <div class="flex items-center gap-1">
-        <input class="xs w-full" bind:value={slot_name} bind:this={slot_name_input} />{#if on_delete}<button
-            class="border-none p-1"
-            onclick={delete_slot}><Trash size="20" /></button
-          >{/if}
-      </div>
+      <input class="xs w-full" bind:value={slot_name} bind:this={slot_name_input} />
+      {#if on_delete}
+        <button class="border-none p-1" onclick={delete_slot}><Trash size="20" /></button>
+      {/if}
+    </div>
+    <div class="mt-2 grid grid-cols-[1rem_1fr_1fr_2rem] items-center gap-1">
+      <div></div>
       <div class="">Values</div>
-      <div class="flex flex-col gap-2">
-        {#each slot_values as _, i (i)}
-          <input class="xs w-full" bind:value={slot_values[i]} use:handleInputRef={i} onkeydown={handleKeydown} />
-        {/each}
-        <button class="w-40" onclick={add_value}
-          >Add
-          <div class="inline font-mono">⇧+⏎</div>
-        </button>
-      </div>
+      <div class="">Disables</div>
+      <div></div>
+      {#each slot_values as _, i (i)}
+        <div class="text-right">-</div>
+        <input class="xs w-full" bind:value={slot_values[i][0]} use:handleInputRef={i} onkeydown={handleKeydown} />
+        <input class="xs w-full" bind:value={slot_values[i][1]} />
+        <button class="border-none p-1" onclick={delete_value(i)}><Trash size="20" /></button>
+      {/each}
+      <button class="w-40" onclick={add_value}
+        >Add
+        <div class="inline font-mono">⇧+⏎</div>
+      </button>
     </div>
   </div>
 </Dialog>

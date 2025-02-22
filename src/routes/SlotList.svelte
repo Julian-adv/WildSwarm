@@ -3,6 +3,7 @@
   import DropDown from '$lib/DropDown.svelte'
   import EditSlotDialog from './EditSlotDialog.svelte'
   import { PencilSquare } from 'svelte-heros-v2'
+  import type { SlotValue } from '$lib/wildcards'
 
   interface Props {
     wildcards: any
@@ -16,16 +17,16 @@
     title: string
     original_slot_name: string
     slot_name: string
-    slot_values: string[]
+    slot_values: [string, string][]
     ok_button: string
-    on_ok: (slot_name: string, slot_values: string[]) => string
+    on_ok: (slot_name: string, slot_values: [string, string][]) => string
     on_delete?: (slot_name: string) => void
   } = $state({
     open: false,
     title: '',
     original_slot_name: '',
     slot_name: '',
-    slot_values: [''],
+    slot_values: [['', '']],
     ok_button: '',
     on_ok: () => '',
     on_delete: () => ''
@@ -87,18 +88,18 @@
     slot_dialog.open = true
     slot_dialog.title = 'Add slot'
     slot_dialog.slot_name = ''
-    slot_dialog.slot_values = ['']
+    slot_dialog.slot_values = [['', '']]
     slot_dialog.ok_button = 'Add'
     slot_dialog.on_ok = add_slot_ok
     slot_dialog.on_delete = undefined
   }
 
-  function add_slot_ok(slot_name: string, slot_values: string[]): string {
+  function add_slot_ok(slot_name: string, slot_values: [string, string][]): string {
     const err = check_slot_name(slot_name)
     if (err) {
       return err
     }
-    wildcards[slot_name] = [...slot_values]
+    wildcards[slot_name] = slot_values.map((v) => (v[1] ? v : v[0]))
     settings.selection[slot_name] = 'random'
     save_yaml(wildcards, 'wildcards.yaml')
     save_json(settings, 'settings.json')
@@ -111,18 +112,18 @@
       slot_dialog.title = 'Edit slot'
       slot_dialog.original_slot_name = slot
       slot_dialog.slot_name = slot
-      slot_dialog.slot_values = [...wildcards[slot]]
+      slot_dialog.slot_values = wildcards[slot].map((v: SlotValue) => (typeof v === 'string' ? [v, ''] : v))
       slot_dialog.ok_button = 'Save'
       slot_dialog.on_ok = edit_slot_ok
       slot_dialog.on_delete = delete_slot
     }
   }
 
-  function edit_slot_ok(slot_name: string, slot_values: string[]): string {
+  function edit_slot_ok(slot_name: string, slot_values: [string, string][]): string {
     if (!slot_name) {
       return 'Slot name is required'
     }
-    wildcards[slot_name] = [...slot_values]
+    wildcards[slot_name] = slot_values.map((v) => (v[1] ? v : v[0]))
     if (slot_name !== slot_dialog.original_slot_name) {
       delete wildcards[slot_dialog.original_slot_name]
       delete settings.selection[slot_dialog.original_slot_name]

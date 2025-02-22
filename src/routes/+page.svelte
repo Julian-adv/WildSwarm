@@ -178,12 +178,15 @@
     <SlotList bind:wildcards bind:settings />
     <button class="primary mt-4 border-1 text-sm" onclick={handle_generate}>Generate</button>
     <label class="mt-2 text-sm"><input type="checkbox" bind:checked={settings.auto_template} />Auto template</label>
+    {#if !settings.auto_template}
+      <label class="mt-2 text-sm"
+        >Template
+        <textarea class="mt-1 h-60 w-full" bind:value={settings.template} onkeypress={handle_keypress}
+        ></textarea></label
+      >
+    {/if}
     <label class="mt-2 text-sm"
-      >Template
-      <textarea class="mt-1 h-60 w-full" bind:value={settings.template} onkeypress={handle_keypress}></textarea></label
-    >
-    <label class="mt-2 text-sm"
-      >Processed prompt
+      >Prompt
       <textarea class="mt-1 h-60 w-full" bind:value={settings.prompt} onkeypress={handle_keypress}></textarea></label
     >
     {#if params.models}
