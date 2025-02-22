@@ -1,6 +1,45 @@
-export type SlotValue = string | [string, string]
+function choose_value(values: string[]): string {
+  // First pass: Calculate total explicit weights and count items without weights
+  let totalExplicitWeight = 0
+  let itemsWithoutWeight = 0
+  const parsedValues = values.map((v) => {
+    const parts = v.split(',', 2)
+    const hasExplicitWeight = parts.length > 1 && /^\d+$/.test(parts[0])
+    if (hasExplicitWeight) {
+      totalExplicitWeight += parseInt(parts[0])
+    } else {
+      itemsWithoutWeight++
+    }
+    return { hasExplicitWeight, parts }
+  })
 
-export function process_wildcards(template: string, wildcards: { [key: string]: SlotValue[] }, settings: any): string {
+  // Calculate weight for items without explicit weight
+  const remainingWeight = Math.max(0, 100 - totalExplicitWeight)
+  const defaultWeight = itemsWithoutWeight > 0 ? remainingWeight / itemsWithoutWeight : 0
+
+  // Second pass: Prepare weighted values with calculated weights
+  let totalWeight = 0
+  const weightedValues = parsedValues.map(({ hasExplicitWeight, parts }, i) => {
+    const weight = hasExplicitWeight ? parseInt(parts[0]) : defaultWeight
+    totalWeight += weight
+    return { weight, value: hasExplicitWeight ? parts[1] : values[i] }
+  })
+
+  // Select random value based on weights
+  let random = Math.random() * totalWeight
+  let selectedValue = weightedValues[weightedValues.length - 1].value
+  for (const { weight, value } of weightedValues) {
+    if (random < weight) {
+      selectedValue = value
+      break
+    }
+    random -= weight
+  }
+
+  return selectedValue
+}
+
+export function process_wildcards(template: string, wildcards: { [key: string]: string[] }, settings: any): string {
   let result = ''
   if (settings.auto_template) {
     result = ''
@@ -17,14 +56,16 @@ export function process_wildcards(template: string, wildcards: { [key: string]: 
     if (selection === 'disabled') {
       value = ''
     } else if (selection === 'random') {
-      const randomValue = values[Math.floor(Math.random() * values.length)]
-      if (typeof randomValue === 'string') {
-        value = randomValue
-      } else if (Array.isArray(randomValue)) {
-        value = randomValue[0]
-        const disabled = (randomValue as [string, string])[1].split(',').filter((v) => v)
-        for (const d of disabled) {
-          temp_selection[d] = 'disabled'
+      const chosenValue = choose_value(values)
+      const parts = chosenValue.split('<disable>', 2)
+      value = parts[0].trim()
+      if (parts.length > 1) {
+        const disabledSlots = parts[1]
+          .trim()
+          .split(',')
+          .filter((s) => s.trim())
+        for (const slot of disabledSlots) {
+          temp_selection[slot] = 'disabled'
         }
       }
     } else {

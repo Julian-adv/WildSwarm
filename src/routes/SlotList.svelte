@@ -3,7 +3,6 @@
   import DropDown from '$lib/DropDown.svelte'
   import EditSlotDialog from './EditSlotDialog.svelte'
   import { PencilSquare } from 'svelte-heros-v2'
-  import type { SlotValue } from '$lib/wildcards'
 
   interface Props {
     wildcards: any
@@ -12,25 +11,8 @@
 
   let { wildcards = $bindable(), settings = $bindable() }: Props = $props()
 
-  let slot_dialog: {
-    open: boolean
-    title: string
-    original_slot_name: string
-    slot_name: string
-    slot_values: [string, string][]
-    ok_button: string
-    on_ok: (slot_name: string, slot_values: [string, string][]) => string
-    on_delete?: (slot_name: string) => void
-  } = $state({
-    open: false,
-    title: '',
-    original_slot_name: '',
-    slot_name: '',
-    slot_values: [['', '']],
-    ok_button: '',
-    on_ok: () => '',
-    on_delete: () => ''
-  })
+  let original_slot_name: string
+  let dialog: EditSlotDialog
 
   let draggedItem: string | null = null
   let draggedOverItem: string | null = $state(null)
@@ -85,21 +67,15 @@
   }
 
   function add_slot() {
-    slot_dialog.open = true
-    slot_dialog.title = 'Add slot'
-    slot_dialog.slot_name = ''
-    slot_dialog.slot_values = [['', '']]
-    slot_dialog.ok_button = 'Add'
-    slot_dialog.on_ok = add_slot_ok
-    slot_dialog.on_delete = undefined
+    dialog.open_dialog('Add slot', '', [''], 'Add', add_slot_ok)
   }
 
-  function add_slot_ok(slot_name: string, slot_values: [string, string][]): string {
+  function add_slot_ok(slot_name: string, slot_values: string[]): string {
     const err = check_slot_name(slot_name)
     if (err) {
       return err
     }
-    wildcards[slot_name] = slot_values.map((v) => (v[1] ? v : v[0]))
+    wildcards[slot_name] = slot_values
     settings.selection[slot_name] = 'random'
     save_yaml(wildcards, 'wildcards.yaml')
     save_json(settings, 'settings.json')
@@ -108,25 +84,19 @@
 
   function edit_slot(slot: string) {
     return () => {
-      slot_dialog.open = true
-      slot_dialog.title = 'Edit slot'
-      slot_dialog.original_slot_name = slot
-      slot_dialog.slot_name = slot
-      slot_dialog.slot_values = wildcards[slot].map((v: SlotValue) => (typeof v === 'string' ? [v, ''] : v))
-      slot_dialog.ok_button = 'Save'
-      slot_dialog.on_ok = edit_slot_ok
-      slot_dialog.on_delete = delete_slot
+      original_slot_name = slot
+      dialog.open_dialog('Edit slot', slot, wildcards[slot], 'Save', edit_slot_ok, delete_slot)
     }
   }
 
-  function edit_slot_ok(slot_name: string, slot_values: [string, string][]): string {
+  function edit_slot_ok(slot_name: string, slot_values: string[]): string {
     if (!slot_name) {
       return 'Slot name is required'
     }
-    wildcards[slot_name] = slot_values.map((v) => (v[1] ? v : v[0]))
-    if (slot_name !== slot_dialog.original_slot_name) {
-      delete wildcards[slot_dialog.original_slot_name]
-      delete settings.selection[slot_dialog.original_slot_name]
+    wildcards[slot_name] = slot_values
+    if (slot_name !== original_slot_name) {
+      delete wildcards[original_slot_name]
+      delete settings.selection[original_slot_name]
       settings.selection[slot_name] = 'random'
       settings = settings
     }
@@ -184,15 +154,7 @@
   </div>
   <button class="mt-2 ml-1" onclick={add_slot}>Add slot</button>
 </div>
-<EditSlotDialog
-  bind:open={slot_dialog.open}
-  title={slot_dialog.title}
-  bind:slot_name={slot_dialog.slot_name}
-  bind:slot_values={slot_dialog.slot_values}
-  ok_button={slot_dialog.ok_button}
-  on_ok={slot_dialog.on_ok}
-  on_delete={slot_dialog.on_delete}
-></EditSlotDialog>
+<EditSlotDialog bind:this={dialog}></EditSlotDialog>
 
 <style>
   .drag-over {

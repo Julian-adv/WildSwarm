@@ -2,37 +2,57 @@
   import Dialog from '$lib/Dialog.svelte'
   import { Trash } from 'svelte-heros-v2'
 
-  interface Props {
-    open: boolean
-    title: string
-    slot_name: string
-    slot_values: [string, string][]
-    ok_button: string
-    on_ok: (slot_name: string, slot_values: [string, string][]) => string
-    on_delete?: (slot_name: string) => void
-  }
-
-  let {
-    open = $bindable(),
-    title,
-    slot_name = $bindable(),
-    slot_values = $bindable([['', '']]),
-    ok_button,
-    on_ok,
-    on_delete
-  }: Props = $props()
+  let open = $state(false)
+  let title = $state('')
+  let slot_name = $state('')
+  let slot_values: { prob: string; value: string; disables: string }[] = $state([])
+  let ok_button = $state('')
+  let on_ok: (slot_name: string, slot_values: string[]) => string
+  let on_delete: ((slot_name: string) => void) | undefined = $state(undefined)
   let slot_name_input: HTMLInputElement
   let last_value_input: HTMLInputElement
   let dialog: Dialog
 
-  $effect(() => {
-    if (open) {
-      slot_name_input.focus()
-    }
-  })
+  export function open_dialog(
+    title_arg: string,
+    slot_name_arg: string,
+    slot_values_arg: string[],
+    ok_button_arg: string,
+    on_ok_arg: (slot_name: string, slot_values: string[]) => string,
+    on_delete_arg?: (slot_name: string) => void
+  ) {
+    open = true
+    title = title_arg
+    slot_name = slot_name_arg
+    slot_values = slot_values_arg.map((str) => {
+      let prob = ''
+      let value = str
+      let disables = ''
+
+      // Check if first part is a number (probability)
+      const parts = str.split(',', 2)
+      if (parts.length > 1 && /^\d+$/.test(parts[0])) {
+        prob = parts[0]
+        value = parts[1]
+      }
+
+      // Extract disables if exists
+      const disablesParts = value.split('<disable>')
+      if (disablesParts.length > 1) {
+        value = disablesParts[0].trim()
+        disables = disablesParts[1].trim()
+      }
+
+      return { prob, value, disables }
+    })
+    ok_button = ok_button_arg
+    on_ok = on_ok_arg
+    on_delete = on_delete_arg
+    setTimeout(() => slot_name_input.focus(), 1)
+  }
 
   function add_value() {
-    slot_values = [...slot_values, ['', '']]
+    slot_values = [...slot_values, { prob: '', value: '', disables: '' }]
     // Focus the new input after the next render
     setTimeout(() => last_value_input?.focus(), 0)
   }
@@ -51,7 +71,17 @@
   }
 
   function internal_on_ok() {
-    return on_ok?.(slot_name, slot_values)
+    const combined_values = slot_values.map(({ prob, value, disables }) => {
+      let result = value
+      if (prob) {
+        result = `${prob},${result}`
+      }
+      if (disables) {
+        result = `${result} <disable> ${disables}`
+      }
+      return result
+    })
+    return on_ok?.(slot_name, combined_values)
   }
 
   function delete_slot() {
@@ -116,12 +146,13 @@
     </div>
     <div class="mt-2 flex flex-col gap-1">
       <div class="flex gap-1">
-        <div class="w-3"></div>
-        <div class="grow-1">Values</div>
-        <div class="grow-1">Disables</div>
-        <div class="w-3"></div>
+        <div class="w-2"></div>
+        <div class="w-8 text-right">%</div>
+        <div class="grow-2">Values</div>
+        <div class="grow-1">Disable slots</div>
+        <div class="w-14"></div>
       </div>
-      {#each slot_values as _, i (i)}
+      {#each slot_values as value, i (i)}
         <div
           class="flex cursor-move items-center gap-1 text-right"
           draggable="true"
@@ -135,8 +166,9 @@
           tabindex="0"
         >
           <div class="w-2 min-w-2">⋮</div>
-          <input class="xs w-full" bind:value={slot_values[i][0]} use:handleInputRef={i} onkeydown={handleKeydown} />
-          <input class="xs w-full" bind:value={slot_values[i][1]} />
+          <input class="xs w-8 text-right" bind:value={value.prob} />
+          <input class="xs grow-2" bind:value={value.value} use:handleInputRef={i} onkeydown={handleKeydown} />
+          <input class="xs grow-1" bind:value={value.disables} />
           <button class="border-none p-1" onclick={delete_value(i)}><Trash size="20" /></button>
         </div>
       {/each}
