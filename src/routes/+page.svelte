@@ -357,8 +357,8 @@
     >
   </div>
   <div>
-    <div class="relative inline-block align-top leading-none">
-      <img src={image} alt="generated" class="max-h-[calc(100vh-2rem)]" />
+    <div class="relative inline-block h-[calc(100vh-1rem)] w-full align-top leading-none">
+      <img src={image} alt="generated" class="max-h-[calc(100vh-1rem)]" />
       {#if status_message}
         <div class="absolute bottom-0 left-0 p-1 text-sm">{status_message}</div>
       {/if}
