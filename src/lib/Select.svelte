@@ -1,14 +1,15 @@
 <script lang="ts">
   interface Props {
     items: string[]
+    labels?: string[]
     value?: string
-    inner_class: string
+    iclass: string
   }
-  let { items, value = $bindable(), inner_class }: Props = $props()
+  let { items, labels = items, value = $bindable(), iclass }: Props = $props()
 </script>
 
-<select bind:value class={inner_class}>
-  {#each items as item}
-    <option value={item}>{item}</option>
+<select bind:value class={iclass}>
+  {#each items as item, i}
+    <option value={item}>{labels[i]}</option>
   {/each}
 </select>

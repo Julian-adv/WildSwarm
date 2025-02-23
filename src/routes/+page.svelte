@@ -17,6 +17,39 @@
   let { data }: PageProps = $props()
   let wildcards: any = $state(data.wildcards)
   let settings: any = $state(data.settings)
+  let aspect_ratio_labels: string[] = $state([])
+  let aspect_ratios: string[] = $state([])
+  const width_heights: { [key: string]: { width: number; height: number } } = {
+    '1:1': { width: 1024, height: 1024 },
+    '4:3': { width: 1152, height: 896 },
+    '3:2': { width: 1216, height: 832 },
+    '8:5': { width: 1216, height: 768 },
+    '16:9': { width: 1344, height: 768 },
+    '21:9': { width: 1536, height: 640 },
+    '3:4': { width: 896, height: 1152 },
+    '2:3': { width: 832, height: 1216 },
+    '5:8': { width: 768, height: 1216 },
+    '9:16': { width: 768, height: 1344 },
+    '9:21': { width: 640, height: 1536 },
+    Custom: { width: 1024, height: 1024 }
+  }
+  let sampler_labels: string[] = $state([])
+  let samplers: string[] = $state([])
+  let scheduler_labels: string[] = $state([])
+  let schedulers: string[] = $state([])
+  let refiner_method_labels: string[] = $state([])
+  let refiner_methods: string[] = $state([])
+  let refiner_upscale_method_labels: string[] = $state([])
+  let refiner_upscale_methods: string[] = $state([])
+  let vaes: string[] = $state([])
+  let vae_labels: string[] = $state([])
+
+  $effect(() => {
+    if (width_heights[settings.aspectratio]) {
+      settings.width = width_heights[settings.aspectratio].width
+      settings.height = width_heights[settings.aspectratio].height
+    }
+  })
 
   async function handle_keypress(event: KeyboardEvent) {
     if (event.key === 'Enter') {
@@ -98,25 +131,24 @@
           session_id: session.session_id,
           images: 1,
           prompt: prompt,
-          negativeprompt:
-            'text, watermark, low-quality, signature, monochrome, 3d, censored, muscles, lores, worst quality, censored, mosaic',
+          negativeprompt: settings.negativeprompt,
           model: settings.model,
-          seed: -1,
-          steps: 50,
-          cfgscale: 5.5,
-          aspectratio: '2:3',
-          width: 832,
-          height: 1216,
-          sampler: 'euler_ancestral',
-          scheduler: 'simple',
+          seed: settings.seed,
+          steps: settings.steps,
+          cfgscale: settings.cfgscale,
+          aspectratio: settings.aspectratio,
+          width: settings.width,
+          height: settings.height,
+          sampler: settings.sampler,
+          scheduler: settings.scheduler,
           refinermodel: settings.refinermodel,
-          refinercontrolpercentage: 0.2,
-          refinermethod: 'PostApply',
-          refinerupscalemethod: 'pixel-lanczos',
-          automaticvae: true,
-          vae: 'sdxlvae',
-          refinercfgscale: 3.5,
-          refinerupscale: 1.5
+          refinercontrolpercentage: settings.refinercontrolpercentage,
+          refinermethod: settings.refinermethod,
+          refinerupscalemethod: settings.refinerupscalemethod,
+          refinercfgscale: settings.refinercfgscale,
+          refinerupscale: settings.refinerupscale,
+          automaticvae: settings.automaticvae,
+          vae: settings.vae
         })
       )
     }
@@ -151,6 +183,30 @@
     }
   }
 
+  function set_params(params: any) {
+    for (const param of params.list) {
+      if (param.id === 'aspectratio') {
+        aspect_ratios = param.values
+        aspect_ratio_labels = param.value_names
+      } else if (param.id === 'refinermethod') {
+        refiner_methods = param.values
+        refiner_method_labels = param.value_names
+      } else if (param.id === 'refinerupscalemethod') {
+        refiner_upscale_methods = param.values
+        refiner_upscale_method_labels = param.value_names
+      } else if (param.id === 'sampler') {
+        samplers = param.values
+        sampler_labels = param.value_names
+      } else if (param.id === 'scheduler') {
+        schedulers = param.values
+        scheduler_labels = param.value_names
+      } else if (param.id === 'vae') {
+        vaes = param.values
+        vae_labels = param.value_names
+      }
+    }
+  }
+
   onMount(async () => {
     wildcards = data.wildcards
     settings = data.settings
@@ -162,12 +218,12 @@
     }
     session = await get_new_session()
     params = await list_t2i_params()
+    set_params(params)
     images = await list_images()
     if (images.files.length > 0) {
       image = 'http://localhost:7801/View/local/' + images.files[0].src
       const metadata = JSON.parse(images.files[0].metadata)
-      settings = { ...settings, ...metadata.sui_image_params }
-      console.log(settings.model)
+      // settings = { ...settings, ...metadata.sui_image_params }
     }
   })
 </script>
@@ -180,9 +236,11 @@
     {/if}
     <SlotList bind:wildcards bind:settings />
     <button class="primary mt-4 border-1 text-sm" onclick={handle_generate}>Generate</button>
-    <label class="mt-2 text-sm"><input type="checkbox" bind:checked={settings.auto_template} />Auto template</label>
     <label class="mt-2 text-sm"
-      ><input type="checkbox" bind:checked={settings.show_selection} />Show chosen selection</label
+      ><input type="checkbox" class="translate-y-[1px]" bind:checked={settings.auto_template} />Auto template</label
+    >
+    <label class="mt-2 text-sm"
+      ><input type="checkbox" class="translate-y-[1px]" bind:checked={settings.show_selection} />Show chosen selection</label
     >
     {#if !settings.auto_template}
       <label class="mt-2 text-sm"
@@ -191,28 +249,112 @@
         ></textarea></label
       >
     {/if}
-    <label class="mt-2 text-sm"
+    <label class="m-[2px] mt-2 text-sm"
       >Prompt
-      <textarea class="mt-1 h-60 w-full" bind:value={settings.prompt} onkeypress={handle_keypress}></textarea></label
+      <textarea class="mt-1 h-50 w-full" bind:value={settings.prompt} onkeypress={handle_keypress}></textarea></label
     >
     {#if params.models}
-      <label class="mt-2 text-sm"
+      <label class="m-[2px] mt-2 text-sm"
         >Model
         <Select
-          inner_class="max-w-80"
+          iclass="max-w-79"
           items={params.models['Stable-Diffusion'].map((x: any) => x.replace('.safetensors', ''))}
           bind:value={settings.model}
         />
       </label>
-      <label class="mt-2 text-sm"
+      <label class="m-[2px] mt-2 text-sm"
         >Refiner Model
         <Select
-          inner_class="max-w-80"
+          iclass="max-w-79"
           items={params.models['Stable-Diffusion'].map((x: any) => x.replace('.safetensors', ''))}
           bind:value={settings.refinermodel}
         />
       </label>
     {/if}
+    <label class="m-[2px] mt-2 text-sm"
+      >Negative prompt
+      <textarea class="mt-1 h-20 w-full" bind:value={settings.negativeprompt} onkeypress={handle_keypress}
+      ></textarea></label
+    >
+    <label class="m-[2px] mt-2 text-sm"
+      >Seed
+      <input class="mt-1 w-full" type="number" bind:value={settings.seed} /></label
+    >
+    <label class="m-[2px] mt-2 text-sm"
+      >Steps
+      <input class="mt-1 w-full" type="number" bind:value={settings.steps} /></label
+    >
+    <label class="m-[2px] mt-2 text-sm"
+      >CFG Scale
+      <input class="mt-1 w-full" type="number" bind:value={settings.cfgscale} step="0.5" /></label
+    >
+    <label class="m-[2px] mt-2 text-sm"
+      >Aspect Ratio
+      <Select
+        iclass="mt-1 w-full"
+        items={aspect_ratios}
+        labels={aspect_ratio_labels}
+        bind:value={settings.aspectratio}
+      /></label
+    >
+    <label class="m-[2px] mt-2 text-sm"
+      >Width
+      <input class="mt-1 w-full" type="number" bind:value={settings.width} /></label
+    >
+    <label class="m-[2px] mt-2 text-sm"
+      >Height
+      <input class="mt-1 w-full" type="number" bind:value={settings.height} /></label
+    >
+    <label class="m-[2px] mt-2 text-sm"
+      >Sampler
+      <Select iclass="mt-1 w-full" items={samplers} labels={sampler_labels} bind:value={settings.sampler} /></label
+    >
+    <label class="m-[2px] mt-2 text-sm"
+      >Scheduler
+      <Select
+        iclass="mt-1 w-full"
+        items={schedulers}
+        labels={scheduler_labels}
+        bind:value={settings.scheduler}
+      /></label
+    >
+    <label class="m-[2px] mt-2 text-sm"
+      >Refiner control percentage
+      <input class="mt-1 w-full" type="number" bind:value={settings.refinercontrolpercentage} step="0.1" />
+    </label>
+    <label class="m-[2px] mt-2 text-sm"
+      >Refiner method
+      <Select
+        iclass="mt-1 w-full"
+        items={refiner_methods}
+        labels={refiner_method_labels}
+        bind:value={settings.refinermethod}
+      /></label
+    >
+    <label class="m-[2px] mt-2 text-sm"
+      >Refiner upscale method
+      <Select
+        iclass="mt-1 w-full"
+        items={refiner_upscale_methods}
+        labels={refiner_upscale_method_labels}
+        bind:value={settings.refinerupscalemethod}
+      /></label
+    >
+    <label class="m-[2px] mt-2 text-sm"
+      >Refiner CFG scale
+      <input class="mt-1 w-full" type="number" bind:value={settings.refinercfgscale} step="0.1" />
+    </label>
+    <label class="m-[2px] mt-2 text-sm"
+      >Refiner upscale
+      <input class="mt-1 w-full" type="number" bind:value={settings.refinerupscale} step="0.1" />
+    </label>
+    <label class="mt-2 text-sm"
+      ><input type="checkbox" class="translate-y-[1px]" bind:checked={settings.automaticvae} />Automatic VAE</label
+    >
+    <label class="m-[2px] mt-2 text-sm"
+      >VAE
+      <Select iclass="mt-1 w-full" items={vaes} labels={vae_labels} bind:value={settings.vae} /></label
+    >
   </div>
   <div>
     <div class="relative inline-block align-top leading-none">
