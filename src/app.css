@@ -43,6 +43,7 @@ body {
     @apply bg-sky-700;
   }
 
+  div.xs,
   select.xs,
   button.xs {
     @apply px-1 py-[1px];

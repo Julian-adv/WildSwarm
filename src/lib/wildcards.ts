@@ -39,19 +39,23 @@ function choose_value(values: string[]): string {
   return selectedValue
 }
 
-export function process_wildcards(template: string, wildcards: { [key: string]: string[] }, settings: any): string {
-  let result = ''
+export function process_wildcards(
+  template: string,
+  wildcards: { [key: string]: string[] },
+  settings: any
+): { prompt: string; selections: { [key: string]: string } } {
+  let prompt = ''
   if (settings.auto_template) {
-    result = ''
+    prompt = ''
     for (const key of Object.keys(wildcards)) {
-      result += `__${key}__,`
+      prompt += `__${key}__,`
     }
   } else {
-    result = template
+    prompt = template
   }
-  let temp_selection: { [key: string]: string } = { ...settings.selection }
+  let selections: { [key: string]: string } = { ...settings.selection }
   for (const [key, values] of Object.entries(wildcards)) {
-    const selection = temp_selection[key]
+    const selection = selections[key]
     let value: string = ''
     if (selection === 'disabled') {
       value = ''
@@ -65,14 +69,15 @@ export function process_wildcards(template: string, wildcards: { [key: string]: 
           .split(',')
           .filter((s) => s.trim())
         for (const slot of disabledSlots) {
-          temp_selection[slot] = 'disabled'
+          selections[slot] = 'disabled'
         }
       }
+      selections[key] = value
     } else {
       value = selection
     }
     const pattern = new RegExp(`__${key}__`, 'g')
-    result = result.replace(pattern, value)
+    prompt = prompt.replace(pattern, value)
   }
-  return result
+  return { prompt, selections }
 }

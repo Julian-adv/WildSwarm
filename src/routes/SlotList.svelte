@@ -11,6 +11,8 @@
 
   let { wildcards = $bindable(), settings = $bindable() }: Props = $props()
 
+  let hide_tooltip: string | null = $state(null)
+
   let original_slot_name: string
   let dialog: EditSlotDialog
 
@@ -143,9 +145,26 @@
         ondrop={handleDrop}
         class:drag-over={draggedOverItem === slot}
       >
-        <div>{slot}</div>
-        <div class="grow-1"></div>
-        <DropDown iclass="max-w-80 xs ring-0" items={wildcards_values(slot)} bind:value={settings.selection[slot]} />
+        <div
+          role="listitem"
+          class="relative flex w-full"
+          onmouseenter={() => (hide_tooltip = slot)}
+          onmouseleave={() => (hide_tooltip = null)}
+        >
+          <div>{slot}</div>
+          <div class="grow-1"></div>
+          <DropDown iclass="max-w-80 xs ring-0" items={wildcards_values(slot)} bind:value={settings.selection[slot]} />
+          {#if settings.show_selection && settings.selections && settings.selection[slot] === 'random' && hide_tooltip !== slot}
+            <div
+              class="xs absolute top-0 right-0 min-h-5 max-w-60 min-w-13 truncate rounded border-1 border-stone-300 bg-slate-50 {settings
+                .selections[slot] === 'disabled'
+                ? 'text-pink-500'
+                : 'text-teal-600'}"
+            >
+              {settings.selections[slot]}
+            </div>
+          {/if}
+        </div>
         <button class="border-none p-0" onclick={edit_slot(slot)}
           ><PencilSquare size="16" color="var(--color-zinc-500)" /></button
         >

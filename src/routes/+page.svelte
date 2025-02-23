@@ -88,13 +88,16 @@
     const ws = new WebSocket('ws://localhost:7801/API/GenerateText2ImageWS')
 
     ws.onopen = () => {
-      settings.prompt = process_wildcards(settings.template, wildcards, settings)
+      const { prompt, selections } = process_wildcards(settings.template, wildcards, settings)
+      settings.prompt = prompt
+      settings.selections = selections
+      save_json(settings, 'settings.json')
       // Send parameters once connected
       ws.send(
         JSON.stringify({
           session_id: session.session_id,
           images: 1,
-          prompt: settings.prompt,
+          prompt: prompt,
           negativeprompt:
             'text, watermark, low-quality, signature, monochrome, 3d, censored, muscles, lores, worst quality, censored, mosaic',
           model: settings.model,
@@ -178,6 +181,9 @@
     <SlotList bind:wildcards bind:settings />
     <button class="primary mt-4 border-1 text-sm" onclick={handle_generate}>Generate</button>
     <label class="mt-2 text-sm"><input type="checkbox" bind:checked={settings.auto_template} />Auto template</label>
+    <label class="mt-2 text-sm"
+      ><input type="checkbox" bind:checked={settings.show_selection} />Show chosen selection</label
+    >
     {#if !settings.auto_template}
       <label class="mt-2 text-sm"
         >Template
