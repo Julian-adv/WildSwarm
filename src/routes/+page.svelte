@@ -235,7 +235,7 @@
       <div class="text-zinc-400">SwarmUI version: <em>{session.version}</em></div>
     {/if}
     <SlotList bind:wildcards bind:settings />
-    <button class="primary mt-4 border-1 text-sm" onclick={handle_generate}>Generate</button>
+    <button class="primary m-[2px] mt-4 border-1 text-sm" onclick={handle_generate}>Generate</button>
     <label class="mt-2 text-sm"
       ><input type="checkbox" class="translate-y-[1px]" bind:checked={settings.auto_template} />Auto template</label
     >
@@ -342,7 +342,7 @@
     >
     <label class="m-[2px] mt-2 text-sm"
       >Refiner CFG scale
-      <input class="mt-1 w-full" type="number" bind:value={settings.refinercfgscale} step="0.1" />
+      <input class="mt-1 w-full" type="number" bind:value={settings.refinercfgscale} step="0.5" />
     </label>
     <label class="m-[2px] mt-2 text-sm"
       >Refiner upscale
@@ -376,14 +376,4 @@
 </div>
 
 <style>
-  /* Hide scrollbar for Chrome, Safari and Opera */
-  .scrollbar-none::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Hide scrollbar for IE, Edge and Firefox */
-  .scrollbar-none {
-    -ms-overflow-style: none; /* IE and Edge */
-    scrollbar-width: none; /* Firefox */
-  }
 </style>

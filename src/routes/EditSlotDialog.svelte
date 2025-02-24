@@ -5,7 +5,7 @@
   let open = $state(false)
   let title = $state('')
   let slot_name = $state('')
-  let slot_values: { prob: string; value: string; disables: string }[] = $state([])
+  let slot_values: { prob: string; prefixes: string[]; value: string; disables: string }[] = $state([])
   let ok_button = $state('')
   let on_ok: (slot_name: string, slot_values: string[]) => string
   let on_delete: ((slot_name: string) => void) | undefined = $state(undefined)
@@ -26,6 +26,7 @@
     slot_name = slot_name_arg
     slot_values = slot_values_arg.map((str) => {
       let prob = ''
+      let prefixes: string[] = ['']
       let value = str
       let disables = ''
 
@@ -36,6 +37,14 @@
         value = parts[1]
       }
 
+      // Check for {abc|def|ghi} pattern
+      const match = value.match(/\{([^}]+)\} */)
+      if (match) {
+        const content = match[1]
+        prefixes = content.split('|')
+        value = value.replace(match[0], '')
+      }
+
       // Extract disables if exists
       const disablesParts = value.split('<disable>')
       if (disablesParts.length > 1) {
@@ -43,7 +52,7 @@
         disables = disablesParts[1].trim()
       }
 
-      return { prob, value, disables }
+      return { prob, prefixes, value, disables }
     })
     ok_button = ok_button_arg
     on_ok = on_ok_arg
@@ -52,7 +61,7 @@
   }
 
   function add_value() {
-    slot_values = [...slot_values, { prob: '', value: '', disables: '' }]
+    slot_values = [...slot_values, { prob: '', prefixes: [''], value: '', disables: '' }]
     // Focus the new input after the next render
     setTimeout(() => last_value_input?.focus(), 0)
   }
@@ -71,8 +80,11 @@
   }
 
   function internal_on_ok() {
-    const combined_values = slot_values.map(({ prob, value, disables }) => {
+    const combined_values = slot_values.map(({ prob, prefixes, value, disables }) => {
       let result = value
+      if (prefixes && prefixes.length > 0 && !(prefixes.length === 1 && prefixes[0] === '')) {
+        result = `{${prefixes.join('|')}} ${result}`
+      }
       if (prob) {
         result = `${prob},${result}`
       }
@@ -98,6 +110,14 @@
   function delete_value(i: number) {
     return () => {
       slot_values.splice(i, 1)
+      slot_values = slot_values
+    }
+  }
+
+  function handlePrefixInput(event: KeyboardEvent, i: number, j: number) {
+    if (event.key === '|') {
+      event.preventDefault()
+      slot_values[i].prefixes.splice(j + 1, 0, '')
       slot_values = slot_values
     }
   }
@@ -144,13 +164,14 @@
         <button class="border-none p-1" onclick={delete_slot}><Trash size="20" /></button>
       {/if}
     </div>
-    <div class="mt-2 flex flex-col gap-1">
+    <div class="mt-2 flex flex-col">
       <div class="flex gap-1">
-        <div class="w-2"></div>
-        <div class="w-8 text-right">%</div>
-        <div class="grow-2">Values</div>
-        <div class="grow-1">Disable slots</div>
-        <div class="w-14"></div>
+        <div class="w-2 shrink-0"></div>
+        <div class="w-8 shrink-0 text-right">%</div>
+        <div class="w-full grow-1 pl-1">Prefixes</div>
+        <div class="w-40 shrink-0">Values</div>
+        <div class="w-40 shrink-0">Disable slots</div>
+        <div class="w-7 shrink-0"></div>
       </div>
       {#each slot_values as value, i (i)}
         <div
@@ -167,8 +188,17 @@
         >
           <div class="w-2 min-w-2">⋮</div>
           <input class="xs w-8 text-right" bind:value={value.prob} />
-          <input class="xs grow-2" bind:value={value.value} use:handleInputRef={i} onkeydown={handleKeydown} />
-          <input class="xs grow-1" bind:value={value.disables} />
+          <div class="xs scrollbar-1 flex w-full grow-1 gap-1 overflow-x-auto p-[2px] whitespace-nowrap">
+            {#each value.prefixes as prefix, j (j)}
+              <input
+                class="xs w-full min-w-20"
+                bind:value={value.prefixes[j]}
+                onkeydown={(e) => handlePrefixInput(e, i, j)}
+              />
+            {/each}
+          </div>
+          <input class="xs w-40" bind:value={value.value} use:handleInputRef={i} />
+          <input class="xs w-40" bind:value={value.disables} />
           <button class="border-none p-1" onclick={delete_value(i)}><Trash size="20" /></button>
         </div>
       {/each}
