@@ -12,7 +12,7 @@
   let slot_name_input: HTMLInputElement
   let last_value_input: HTMLInputElement
   let dialog: Dialog
-  let prefixInputRefs: HTMLInputElement[][] = []
+  let prefix_input_refs: HTMLInputElement[][] = $state([])
 
   export function open_dialog(
     title_arg: string,
@@ -56,6 +56,9 @@
       return { prob, prefixes, value, disables }
     })
     ok_button = ok_button_arg
+    for (let i = 0; i < slot_values.length; i++) {
+      prefix_input_refs[i] = []
+    }
     on_ok = on_ok_arg
     on_delete = on_delete_arg
     setTimeout(() => slot_name_input.focus(), 1)
@@ -120,9 +123,19 @@
       event.preventDefault()
       slot_values[i].prefixes.splice(j + 1, 0, '')
       slot_values = slot_values
+    }
+  }
+
+  function delete_prefix(i: number, j: number) {
+    return () => {
+      if (slot_values[i].prefixes.length === 1) {
+        return
+      }
+      slot_values[i].prefixes.splice(j, 1)
+      slot_values = slot_values
       // Wait for Svelte to update the DOM
       setTimeout(() => {
-        prefixInputRefs[i]?.[j + 1]?.focus()
+        prefix_input_refs[i]?.[j + 1]?.focus()
       })
     }
   }
@@ -180,7 +193,7 @@
       </div>
       {#each slot_values as value, i (i)}
         <div
-          class="flex cursor-move items-center gap-1 text-right"
+          class="flex cursor-move items-center gap-1 text-right even:bg-slate-100"
           draggable="true"
           ondragstart={handleDragStart(i)}
           ondragover={handleDragOver(i)}
@@ -193,15 +206,25 @@
         >
           <div class="w-2 min-w-2">⋮</div>
           <input class="xs w-8 text-right" bind:value={value.prob} />
-          <div class="xs scrollbar-1 flex w-full grow-1 gap-1 overflow-x-auto p-[2px] whitespace-nowrap">
+          <div class="xs scrollbar-1 flex w-full grow-1 flex-wrap gap-1 p-[2px]">
             {#each value.prefixes as prefix, j (j)}
-              {@const _ = prefixInputRefs[i] ??= []}
-              <input
-                class="xs w-full min-w-20"
-                bind:value={value.prefixes[j]}
-                bind:this={prefixInputRefs[i][j]}
-                onkeydown={(e) => handlePrefixInput(e, i, j)}
-              />
+              <div class="flex items-center gap-[3px] rounded border-1 border-stone-300">
+                {#if value.prefixes.length > 1}
+                  <div class="w-3">⋮</div>
+                {/if}
+                <input
+                  class="xs min-w-8 border-none"
+                  size={value.prefixes[j].length || 1}
+                  bind:value={value.prefixes[j]}
+                  bind:this={prefix_input_refs[i][j]}
+                  onkeydown={(e) => handlePrefixInput(e, i, j)}
+                />
+                {#if value.prefixes.length > 1}
+                  <button class="border-none p-0 text-stone-300" onclick={delete_prefix(i, j)}
+                    ><Trash size="16" /></button
+                  >
+                {/if}
+              </div>
             {/each}
           </div>
           <input class="xs w-40" bind:value={value.value} use:handleInputRef={i} />
@@ -226,9 +249,8 @@
     position: absolute;
     left: 0px;
     right: 0px;
-    top: -2px;
+    top: -1px;
     height: 2px;
     background-color: #4299e1;
-    transform: translateY(-50%);
   }
 </style>
