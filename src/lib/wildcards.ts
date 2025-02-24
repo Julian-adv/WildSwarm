@@ -39,6 +39,23 @@ function choose_value(values: string[]): string {
   return selectedValue
 }
 
+function choose_value_from(text: string): string {
+  // Find pattern like {abc|def|ghi}
+  const matches = text.match(/\{([^}]+)\}/g)
+  if (!matches) return text
+
+  let result = text
+  for (const match of matches) {
+    // Extract options between { and }
+    const options = match.slice(1, -1).split('|')
+    // If there are consecutive |, it means there's an empty option
+    const selectedOption = options[Math.floor(Math.random() * options.length)]
+    result = result.replace(match, selectedOption)
+  }
+
+  return result
+}
+
 export function process_wildcards(
   template: string,
   wildcards: { [key: string]: string[] },
@@ -72,6 +89,7 @@ export function process_wildcards(
           selections[slot] = 'disabled'
         }
       }
+      value = choose_value_from(value)
       selections[key] = value
     } else {
       value = selection

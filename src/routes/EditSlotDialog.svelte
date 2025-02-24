@@ -12,6 +12,7 @@
   let slot_name_input: HTMLInputElement
   let last_value_input: HTMLInputElement
   let dialog: Dialog
+  let prefixInputRefs: HTMLInputElement[][] = []
 
   export function open_dialog(
     title_arg: string,
@@ -119,6 +120,10 @@
       event.preventDefault()
       slot_values[i].prefixes.splice(j + 1, 0, '')
       slot_values = slot_values
+      // Wait for Svelte to update the DOM
+      setTimeout(() => {
+        prefixInputRefs[i]?.[j + 1]?.focus()
+      })
     }
   }
 
@@ -190,9 +195,11 @@
           <input class="xs w-8 text-right" bind:value={value.prob} />
           <div class="xs scrollbar-1 flex w-full grow-1 gap-1 overflow-x-auto p-[2px] whitespace-nowrap">
             {#each value.prefixes as prefix, j (j)}
+              {@const _ = prefixInputRefs[i] ??= []}
               <input
                 class="xs w-full min-w-20"
                 bind:value={value.prefixes[j]}
+                bind:this={prefixInputRefs[i][j]}
                 onkeydown={(e) => handlePrefixInput(e, i, j)}
               />
             {/each}
