@@ -1,6 +1,8 @@
 <script lang="ts">
   import Dialog from '$lib/Dialog.svelte'
   import { Trash } from 'svelte-heros-v2'
+  import { flip } from 'svelte/animate'
+  import { quintOut } from 'svelte/easing'
 
   let open = $state(false)
   let title = $state('')
@@ -13,6 +15,7 @@
   let last_value_input: HTMLInputElement
   let dialog: Dialog
   let prefix_input_refs: HTMLInputElement[][] = $state([])
+  let original_prefixes: string[] | null = null
 
   export function open_dialog(
     title_arg: string,
@@ -171,6 +174,72 @@
   function handleDragLeave() {
     drag_target_index = null
   }
+
+  let prefix_drag_source: { row: number; col: number } | null = $state(null)
+  let prefix_drag_target: { row: number; col: number } | null = $state(null)
+  let prefix_drag_source_elem: string | null = $state(null)
+  let prefix_drag_target_elem: string | null = $state(null)
+
+  function handlePrefixDragStart(row: number, col: number) {
+    return (e: DragEvent) => {
+      e.stopPropagation()
+      prefix_drag_source = { row, col }
+      prefix_drag_source_elem = slot_values[row].prefixes[col]
+      original_prefixes = [...slot_values[row].prefixes]
+      e.dataTransfer?.setData('text/plain', '')
+    }
+  }
+
+  function handlePrefixDragOver(row: number, col: number) {
+    return (e: DragEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      console.log(row, col, slot_values[row].prefixes)
+      prefix_drag_target_elem = slot_values[row].prefixes[col]
+      if (
+        prefix_drag_source &&
+        original_prefixes &&
+        row === prefix_drag_source.row &&
+        col !== prefix_drag_source.col &&
+        prefix_drag_source_elem !== prefix_drag_target_elem
+      ) {
+        console.log(row, col, prefix_drag_source_elem, prefix_drag_target_elem)
+        prefix_drag_target = { row, col }
+        const prefixes = [...original_prefixes]
+        const [moved_item] = prefixes.splice(prefix_drag_source.col, 1)
+        const adjusted_target = col > prefix_drag_source.col ? col - 1 : col
+        prefixes.splice(adjusted_target, 0, moved_item)
+        slot_values[row].prefixes = prefixes
+        slot_values = slot_values
+        console.log(slot_values[row].prefixes)
+      }
+    }
+  }
+
+  function handlePrefixDragEnd() {
+    if (
+      prefix_drag_source &&
+      prefix_drag_target &&
+      original_prefixes &&
+      prefix_drag_source.row !== prefix_drag_target.row
+    ) {
+      // Restore original order if drag was cancelled
+      slot_values[prefix_drag_source.row].prefixes = original_prefixes
+      slot_values = slot_values
+    }
+    prefix_drag_source = null
+    prefix_drag_target = null
+    original_prefixes = null
+  }
+
+  function handlePrefixDragLeave() {
+    // if (original_prefixes && prefix_drag_source) {
+    //   // Restore original order when dragging outside
+    //   slot_values[prefix_drag_source.row].prefixes = original_prefixes
+    //   slot_values = slot_values
+    // }
+    // prefix_drag_target = null
+  }
 </script>
 
 <Dialog bind:this={dialog} bind:open {title} {ok_button} on_ok={internal_on_ok}>
@@ -199,7 +268,7 @@
           ondragover={handleDragOver(i)}
           ondragleave={handleDragLeave}
           ondragend={handleDragEnd}
-          class:drag-over={drag_target_index === i}
+          class:drag-over={drag_target_index === i && prefix_drag_source === null}
           role="button"
           aria-label="Drag to reorder"
           tabindex="0"
@@ -207,10 +276,23 @@
           <div class="w-2 min-w-2">⋮</div>
           <input class="xs w-8 text-right" bind:value={value.prob} />
           <div class="xs scrollbar-1 flex w-full grow-1 flex-wrap gap-1 p-[2px]">
-            {#each value.prefixes as prefix, j (j)}
+            {#each value.prefixes as prefix, j (prefix)}
               <div class="flex items-center gap-[3px] rounded border-1 border-stone-300">
                 {#if value.prefixes.length > 1}
-                  <div class="w-3">⋮</div>
+                  <div
+                    class="w-3 cursor-move"
+                    draggable="true"
+                    ondragstart={handlePrefixDragStart(i, j)}
+                    ondragover={handlePrefixDragOver(i, j)}
+                    ondragleave={handlePrefixDragLeave}
+                    ondragend={handlePrefixDragEnd}
+                    class:prefix-drag-over={prefix_drag_target?.row === i && prefix_drag_target?.col === j}
+                    role="button"
+                    aria-label="Drag to reorder prefix"
+                    tabindex="0"
+                  >
+                    ⋮
+                  </div>
                 {/if}
                 <input
                   class="xs min-w-8 border-none"
@@ -244,6 +326,7 @@
   .drag-over {
     position: relative;
   }
+
   .drag-over::after {
     content: '';
     position: absolute;
@@ -251,6 +334,20 @@
     right: 0px;
     top: -1px;
     height: 2px;
+    background-color: #4299e1;
+  }
+
+  .prefix-drag-over {
+    position: relative;
+  }
+
+  .prefix-drag-over::after {
+    content: '';
+    position: absolute;
+    left: -4px;
+    width: 2px;
+    top: 0px;
+    bottom: 0px;
     background-color: #4299e1;
   }
 </style>
