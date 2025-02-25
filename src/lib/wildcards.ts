@@ -56,6 +56,28 @@ function choose_value_from(text: string): string {
   return result
 }
 
+function process_switch(text: string, selections: { [key: string]: string }): string {
+  const parts = text.split('<switch>', 2)
+  let value = parts[0].trim()
+  if (parts.length > 1) {
+    const slots = parts[1]
+      .trim()
+      .split(',')
+      .filter((s) => s.trim())
+    for (const slot of slots) {
+      if (slot[0] === '-') {
+        selections[slot.slice(1)] = 'disabled'
+      } else if (slot[0] === '+') {
+        selections[slot.slice(1)] = 'notempty'
+      } else {
+        selections[slot] = slot
+      }
+    }
+  }
+  value = choose_value_from(value)
+  return value
+}
+
 export function process_wildcards(
   template: string,
   wildcards: { [key: string]: string[] },
@@ -76,23 +98,16 @@ export function process_wildcards(
     let value: string = ''
     if (selection === 'disabled') {
       value = ''
-    } else if (selection === 'random') {
-      const chosenValue = choose_value(values)
-      const parts = chosenValue.split('<disable>', 2)
-      value = parts[0].trim()
-      if (parts.length > 1) {
-        const disabledSlots = parts[1]
-          .trim()
-          .split(',')
-          .filter((s) => s.trim())
-        for (const slot of disabledSlots) {
-          selections[slot] = 'disabled'
-        }
-      }
-      value = choose_value_from(value)
+    } else if (selection === 'random' || selection === 'notempty') {
+      const chosenValue =
+        selection === 'notempty'
+          ? choose_value(values.filter((v) => v.trim() !== '' && v.split(',', 2)?.[1] !== ''))
+          : choose_value(values)
+      value = process_switch(chosenValue, selections)
       selections[key] = value
     } else {
-      value = selection
+      value = process_switch(selection, selections)
+      selections[key] = value
     }
     const pattern = new RegExp(`__${key}__`, 'g')
     prompt = prompt.replace(pattern, value)

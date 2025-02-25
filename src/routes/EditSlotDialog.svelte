@@ -6,7 +6,7 @@
   let open = $state(false)
   let title = $state('')
   let slot_name = $state('')
-  let slot_values: { prob: string; prefixes: string[]; value: string; disables: string; postfixes: string[] }[] =
+  let slot_values: { prob: string; prefixes: string[]; value: string; switches: string; postfixes: string[] }[] =
     $state([])
   let ok_button = $state('')
   let on_ok: (slot_name: string, slot_values: string[]) => string
@@ -33,7 +33,7 @@
       let prefixes: string[] = ['']
       let value = str
       let postfixes: string[] = ['']
-      let disables = ''
+      let switches = ''
 
       // Check if first part is a number (probability)
       const parts = str.split(',', 2)
@@ -57,14 +57,14 @@
         value = value.replace(postfixes_match[0], '')
       }
 
-      // Extract disables if exists
-      const disablesParts = value.split('<disable>')
-      if (disablesParts.length > 1) {
-        value = disablesParts[0].trim()
-        disables = disablesParts[1].trim()
+      // Extract switches if exists
+      const switchesParts = value.split('<switch>')
+      if (switchesParts.length > 1) {
+        value = switchesParts[0].trim()
+        switches = switchesParts[1].trim()
       }
 
-      return { prob, prefixes, value, postfixes, disables }
+      return { prob, prefixes, value, postfixes, switches }
     })
     ok_button = ok_button_arg
     for (let i = 0; i < slot_values.length; i++) {
@@ -77,7 +77,7 @@
   }
 
   function add_value() {
-    slot_values = [...slot_values, { prob: '', prefixes: [''], value: '', postfixes: [''], disables: '' }]
+    slot_values = [...slot_values, { prob: '', prefixes: [''], value: '', postfixes: [''], switches: '' }]
     prefix_input_refs = [...prefix_input_refs, []]
     postfix_input_refs = [...postfix_input_refs, []]
     // Focus the new input after the next render
@@ -98,7 +98,7 @@
   }
 
   function internal_on_ok() {
-    const combined_values = slot_values.map(({ prob, prefixes, value, postfixes, disables }) => {
+    const combined_values = slot_values.map(({ prob, prefixes, value, postfixes, switches }) => {
       let result = value
       if (prefixes && prefixes.length > 0 && !(prefixes.length === 1 && prefixes[0] === '')) {
         result = `{${prefixes.join('|')}} ${result}`
@@ -109,8 +109,8 @@
       if (prob) {
         result = `${prob},${result}`
       }
-      if (disables) {
-        result = `${result} <disable> ${disables}`
+      if (switches) {
+        result = `${result} <switch> ${switches}`
       }
       return result
     })
@@ -215,7 +215,7 @@
           <div class="w-full grow-1 pl-1">Prefixes</div>
           <div class="w-40 shrink-0">Value</div>
           <div class="w-full grow-1 pl-1">Sub values</div>
-          <div class="w-30 shrink-0">Disable slots</div>
+          <div class="w-30 shrink-0">Switch slots</div>
           <div class="w-7 shrink-0"></div>
         </div>
       {/snippet}
@@ -271,7 +271,7 @@
             {/if}
           {/snippet}
         </DragList>
-        <input class="xs w-30" bind:value={value.disables} />
+        <input class="xs w-30" bind:value={value.switches} />
         <button class="border-none p-1" onclick={delete_value(i)}><Trash size="20" /></button>
       {/snippet}
     </DragList>
