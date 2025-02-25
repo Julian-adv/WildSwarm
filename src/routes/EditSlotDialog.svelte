@@ -1,6 +1,6 @@
 <script lang="ts">
   import Dialog from '$lib/Dialog.svelte'
-  import { Trash } from 'svelte-heros-v2'
+  import { Plus, Trash } from 'svelte-heros-v2'
   import DragList from '$lib/DragList.svelte'
 
   let open = $state(false)
@@ -135,21 +135,33 @@
     }
   }
 
+  function add_prefix(i: number, j: number) {
+    return () => {
+      slot_values[i].prefixes.splice(j, 0, '')
+      slot_values = slot_values
+      setTimeout(() => prefix_input_refs[i][j]?.focus(), 0)
+    }
+  }
+
   function handle_prefix_input(event: KeyboardEvent, i: number, j: number) {
     if (event.key === '|') {
       event.preventDefault()
-      slot_values[i].prefixes.splice(j + 1, 0, '')
+      add_prefix(i, j + 1)()
+    }
+  }
+
+  function add_postfix(i: number, j: number) {
+    return () => {
+      slot_values[i].postfixes.splice(j, 0, '')
       slot_values = slot_values
-      setTimeout(() => prefix_input_refs[i][j + 1]?.focus(), 0)
+      setTimeout(() => postfix_input_refs[i][j]?.focus(), 0)
     }
   }
 
   function handle_postfix_input(event: KeyboardEvent, i: number, j: number) {
     if (event.key === '|') {
       event.preventDefault()
-      slot_values[i].postfixes.splice(j + 1, 0, '')
-      slot_values = slot_values
-      setTimeout(() => postfix_input_refs[i][j + 1]?.focus(), 0)
+      add_postfix(i, j + 1)()
     }
   }
 
@@ -229,6 +241,9 @@
             {#if value.prefixes.length > 1}
               <button class="border-none p-0 text-stone-300" onclick={delete_prefix(i, j)}><Trash size="16" /></button>
             {/if}
+            {#if value.prefixes.length - 1 === j}
+              <button class="border-none p-0 text-stone-300" onclick={add_prefix(i, j + 1)}><Plus size="16" /></button>
+            {/if}
           {/snippet}
         </DragList>
         <input class="xs w-40" bind:value={value.value} use:handleInputRef={i} onkeydown={handle_keydown} />
@@ -250,6 +265,9 @@
             />
             {#if value.postfixes.length > 1}
               <button class="border-none p-0 text-stone-300" onclick={delete_postfix(i, j)}><Trash size="16" /></button>
+            {/if}
+            {#if value.postfixes.length - 1 === j}
+              <button class="border-none p-0 text-stone-300" onclick={add_postfix(i, j + 1)}><Plus size="16" /></button>
             {/if}
           {/snippet}
         </DragList>

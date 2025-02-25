@@ -48,7 +48,7 @@
   ></div>
 
   <div
-    class="bg-background fixed top-1/2 left-1/2 z-50 w-full max-w-4xl -translate-x-1/2 -translate-y-1/2 transform rounded-lg p-4 shadow-xl"
+    class="bg-background fixed top-1/2 left-1/2 z-50 w-full max-w-6xl -translate-x-1/2 -translate-y-1/2 transform rounded-lg p-4 shadow-xl"
   >
     <h2 class="w-full text-center">{title}</h2>
     <button class="absolute top-2 right-2 border-none px-0 py-0" onclick={close_dialog}><XMark size="24" /></button>

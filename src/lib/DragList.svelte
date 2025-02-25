@@ -5,10 +5,11 @@
     items: any[]
     container_class: string
     draggable_class: string
+    ondrop?: (items: any[]) => void
     header?: () => any
     children: (item: any, i: number) => any
   }
-  let { items = $bindable(), container_class, draggable_class, header, children }: Props = $props()
+  let { items = $bindable(), container_class, draggable_class, ondrop, header, children }: Props = $props()
   let drag_source: number | null = $state(null)
   let drag_target: number | null = $state(null)
   let original_items: any[] | null = $state(null)
@@ -40,6 +41,7 @@
     drag_source = null
     drag_target = null
     original_items = null
+    ondrop?.(items)
   }
 </script>
 
