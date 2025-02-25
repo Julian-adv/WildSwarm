@@ -125,6 +125,7 @@
       event.preventDefault()
       slot_values[i].prefixes.splice(j + 1, 0, '')
       slot_values = slot_values
+      setTimeout(() => prefix_input_refs[i][j + 1]?.focus(), 0)
     }
   }
 
