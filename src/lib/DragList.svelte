@@ -5,9 +5,10 @@
     items: any[]
     container_class: string
     draggable_class: string
-    children: (i: number) => any
+    header?: () => any
+    children: (item: any, i: number) => any
   }
-  let { items = $bindable(), container_class, draggable_class, children }: Props = $props()
+  let { items = $bindable(), container_class, draggable_class, header, children }: Props = $props()
   let drag_source: number | null = $state(null)
   let drag_target: number | null = $state(null)
   let original_items: any[] | null = $state(null)
@@ -25,14 +26,12 @@
     return (e: DragEvent) => {
       e.preventDefault()
       e.stopPropagation()
-      if (drag_source && original_items && i !== drag_source && i !== drag_target) {
+      if (drag_source !== null && original_items && i !== drag_target) {
         drag_target = i
         const temp_items = [...original_items]
         const [moved_item] = temp_items.splice(drag_source, 1)
-        const adjusted_target = i > drag_source ? i - 1 : i
-        temp_items.splice(adjusted_target, 0, moved_item)
+        temp_items.splice(i, 0, moved_item)
         items = temp_items
-        console.log(items)
       }
     }
   }
@@ -45,7 +44,10 @@
 </script>
 
 <div class={container_class}>
-  {#each items as item, i (item)}
+  {#if header}
+    {@render header()}
+  {/if}
+  {#each items as item, i (i)}
     <div
       class={draggable_class}
       class:drag-over={drag_target === i}
@@ -56,15 +58,15 @@
       role="button"
       aria-label="Drag to reorder prefix"
       tabindex="0"
-      animate:flip={{ duration: 200 }}
+      animate:flip={{ duration: 100 }}
     >
-      {@render children(i)}
+      {@render children(item, i)}
     </div>
   {/each}
 </div>
 
 <style>
   .drag-over {
-    opacity: 0.1;
+    opacity: 0;
   }
 </style>

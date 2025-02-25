@@ -1,7 +1,6 @@
 <script lang="ts">
   import Dialog from '$lib/Dialog.svelte'
   import { Trash } from 'svelte-heros-v2'
-  import { flip } from 'svelte/animate'
   import DragList from '$lib/DragList.svelte'
 
   let open = $state(false)
@@ -15,7 +14,6 @@
   let last_value_input: HTMLInputElement
   let dialog: Dialog
   let prefix_input_refs: HTMLInputElement[][] = $state([])
-  let original_prefixes: string[] | null = null
 
   export function open_dialog(
     title_arg: string,
@@ -69,11 +67,12 @@
 
   function add_value() {
     slot_values = [...slot_values, { prob: '', prefixes: [''], value: '', disables: '' }]
+    prefix_input_refs = [...prefix_input_refs, []]
     // Focus the new input after the next render
     setTimeout(() => last_value_input?.focus(), 0)
   }
 
-  function handleKeydown(event: KeyboardEvent) {
+  function handle_keydown(event: KeyboardEvent) {
     if (event.shiftKey && event.key === 'Enter') {
       event.preventDefault()
       add_value()
@@ -142,104 +141,6 @@
       })
     }
   }
-
-  let drag_source_index: number | null = null
-  let drag_target_index: number | null = $state(null)
-
-  function handleDragStart(index: number) {
-    return (e: DragEvent) => {
-      drag_source_index = index
-      e.dataTransfer?.setData('text/plain', '') // Required for Firefox
-    }
-  }
-
-  function handleDragOver(index: number) {
-    return (e: DragEvent) => {
-      e.preventDefault()
-      drag_target_index = index
-    }
-  }
-
-  function handleDragEnd() {
-    if (drag_source_index !== null && drag_target_index !== null && drag_source_index !== drag_target_index) {
-      const [moved_item] = slot_values.splice(drag_source_index, 1)
-      const adjusted_target = drag_target_index > drag_source_index ? drag_target_index - 1 : drag_target_index
-      slot_values.splice(adjusted_target, 0, moved_item)
-      slot_values = slot_values
-    }
-    drag_source_index = null
-    drag_target_index = null
-  }
-
-  function handleDragLeave() {
-    drag_target_index = null
-  }
-
-  let prefix_drag_source: { row: number; col: number } | null = $state(null)
-  let prefix_drag_target: { row: number; col: number } | null = $state(null)
-  let prefix_drag_source_elem: string | null = $state(null)
-  let prefix_drag_target_elem: string | null = $state(null)
-
-  function handlePrefixDragStart(row: number, col: number) {
-    return (e: DragEvent) => {
-      e.stopPropagation()
-      prefix_drag_source = { row, col }
-      prefix_drag_source_elem = slot_values[row].prefixes[col]
-      original_prefixes = [...slot_values[row].prefixes]
-      e.dataTransfer?.setData('text/plain', '')
-    }
-  }
-
-  function handlePrefixDragOver(row: number, col: number) {
-    return (e: DragEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
-      console.log(row, col, slot_values[row].prefixes)
-      prefix_drag_target_elem = slot_values[row].prefixes[col]
-      if (
-        prefix_drag_source &&
-        original_prefixes &&
-        row === prefix_drag_source.row &&
-        col !== prefix_drag_source.col &&
-        prefix_drag_source_elem !== prefix_drag_target_elem
-      ) {
-        console.log(row, col, prefix_drag_source_elem, prefix_drag_target_elem)
-        prefix_drag_target = { row, col }
-        const prefixes = [...original_prefixes]
-        const [moved_item] = prefixes.splice(prefix_drag_source.col, 1)
-        const adjusted_target = col > prefix_drag_source.col ? col - 1 : col
-        prefixes.splice(adjusted_target, 0, moved_item)
-        slot_values[row].prefixes = prefixes
-        slot_values = slot_values
-        console.log(slot_values[row].prefixes)
-      }
-    }
-  }
-
-  function handlePrefixDragEnd() {
-    if (
-      prefix_drag_source &&
-      prefix_drag_target &&
-      original_prefixes &&
-      prefix_drag_source.row !== prefix_drag_target.row
-    ) {
-      // Restore original order if drag was cancelled
-      slot_values[prefix_drag_source.row].prefixes = original_prefixes
-      slot_values = slot_values
-    }
-    prefix_drag_source = null
-    prefix_drag_target = null
-    original_prefixes = null
-  }
-
-  function handlePrefixDragLeave() {
-    // if (original_prefixes && prefix_drag_source) {
-    //   // Restore original order when dragging outside
-    //   slot_values[prefix_drag_source.row].prefixes = original_prefixes
-    //   slot_values = slot_values
-    // }
-    // prefix_drag_target = null
-  }
 </script>
 
 <Dialog bind:this={dialog} bind:open {title} {ok_button} on_ok={internal_on_ok}>
@@ -251,81 +152,53 @@
         <button class="border-none p-1" onclick={delete_slot}><Trash size="20" /></button>
       {/if}
     </div>
-    <div class="mt-2 flex flex-col">
-      <div class="flex gap-1">
-        <div class="w-2 shrink-0"></div>
-        <div class="w-8 shrink-0 text-right">%</div>
-        <div class="w-full grow-1 pl-1">Prefixes</div>
-        <div class="w-40 shrink-0">Values</div>
-        <div class="w-40 shrink-0">Disable slots</div>
-        <div class="w-7 shrink-0"></div>
-      </div>
-      {#each slot_values as value, i (i)}
-        <div
-          class="flex cursor-move items-center gap-1 text-right even:bg-slate-100"
-          draggable="true"
-          ondragstart={handleDragStart(i)}
-          ondragover={handleDragOver(i)}
-          ondragleave={handleDragLeave}
-          ondragend={handleDragEnd}
-          class:drag-over={drag_target_index === i && prefix_drag_source === null}
-          role="button"
-          aria-label="Drag to reorder"
-          tabindex="0"
-        >
-          <div class="w-2 min-w-2">⋮</div>
-          <input class="xs w-8 text-right" bind:value={value.prob} />
-          <DragList
-            container_class="xs scrollbar-1 flex w-full grow-1 flex-wrap gap-1 p-[2px]"
-            draggable_class="flex cursor-move items-center gap-[3px] rounded border-1 border-stone-300"
-            bind:items={value.prefixes}
-          >
-            {#snippet children(j)}
-              {#if value.prefixes.length > 1}
-                <div class="w-3">⋮</div>
-              {/if}
-              <input
-                class="xs min-w-8 border-none"
-                size={value.prefixes[j].length || 1}
-                bind:value={value.prefixes[j]}
-                bind:this={prefix_input_refs[i][j]}
-                onkeydown={(e) => handlePrefixInput(e, i, j)}
-              />
-              {#if value.prefixes.length > 1}
-                <button class="border-none p-0 text-stone-300" onclick={delete_prefix(i, j)}><Trash size="16" /></button
-                >
-              {/if}
-            {/snippet}
-          </DragList>
-          <input class="xs w-40" bind:value={value.value} use:handleInputRef={i} />
-          <input class="xs w-40" bind:value={value.disables} />
-          <button class="border-none p-1" onclick={delete_value(i)}><Trash size="20" /></button>
+    <DragList
+      container_class="mt-2 flex flex-col"
+      draggable_class="flex cursor-move items-center gap-1 text-right even:bg-slate-100"
+      bind:items={slot_values}
+    >
+      {#snippet header()}
+        <div class="flex gap-1">
+          <div class="w-2 shrink-0"></div>
+          <div class="w-8 shrink-0 text-right">%</div>
+          <div class="w-full grow-1 pl-1">Prefixes</div>
+          <div class="w-40 shrink-0">Values</div>
+          <div class="w-40 shrink-0">Disable slots</div>
+          <div class="w-7 shrink-0"></div>
         </div>
-      {/each}
-      <button class="ml-3 w-40" onclick={add_value}
-        >Add
-        <div class="inline font-mono">⇧+⏎</div>
-      </button>
-    </div>
+      {/snippet}
+      {#snippet children(value, i)}
+        <div class="w-2 min-w-2">⋮</div>
+        <input class="xs w-8 text-right" bind:value={value.prob} />
+        <DragList
+          container_class="xs scrollbar-1 flex w-full grow-1 flex-wrap gap-1 p-[2px]"
+          draggable_class="flex cursor-move items-center gap-[3px] rounded border-1 border-stone-300"
+          bind:items={value.prefixes}
+        >
+          {#snippet children(prefix, j)}
+            {#if value.prefixes.length > 1}
+              <div class="w-3">⋮</div>
+            {/if}
+            <input
+              class="xs min-w-8 border-none"
+              size={prefix.length || 1}
+              bind:value={value.prefixes[j]}
+              bind:this={prefix_input_refs[i][j]}
+              onkeydown={(e) => handlePrefixInput(e, i, j)}
+            />
+            {#if value.prefixes.length > 1}
+              <button class="border-none p-0 text-stone-300" onclick={delete_prefix(i, j)}><Trash size="16" /></button>
+            {/if}
+          {/snippet}
+        </DragList>
+        <input class="xs w-40" bind:value={value.value} use:handleInputRef={i} onkeydown={handle_keydown} />
+        <input class="xs w-40" bind:value={value.disables} />
+        <button class="border-none p-1" onclick={delete_value(i)}><Trash size="20" /></button>
+      {/snippet}
+    </DragList>
+    <button class="ml-3 w-40" onclick={add_value}
+      >Add
+      <div class="inline font-mono">⇧+⏎</div>
+    </button>
   </div>
 </Dialog>
-
-<style>
-  .drag-over {
-    position: relative;
-  }
-
-  .drag-over::after {
-    content: '';
-    position: absolute;
-    left: 0px;
-    right: 0px;
-    top: -1px;
-    height: 2px;
-    background-color: #4299e1;
-  }
-
-  .prefix-drag-over {
-    opacity: 0.1;
-  }
-</style>
