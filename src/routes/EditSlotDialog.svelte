@@ -2,7 +2,6 @@
   import Dialog from '$lib/Dialog.svelte'
   import { Trash } from 'svelte-heros-v2'
   import { flip } from 'svelte/animate'
-  import { quintOut } from 'svelte/easing'
 
   let open = $state(false)
   let title = $state('')
@@ -277,22 +276,21 @@
           <input class="xs w-8 text-right" bind:value={value.prob} />
           <div class="xs scrollbar-1 flex w-full grow-1 flex-wrap gap-1 p-[2px]">
             {#each value.prefixes as prefix, j (prefix)}
-              <div class="flex items-center gap-[3px] rounded border-1 border-stone-300">
+              <div
+                class="flex cursor-move items-center gap-[3px] rounded border-1 border-stone-300"
+                class:prefix-drag-over={prefix_drag_target?.row === i && prefix_drag_target?.col === j}
+                draggable="true"
+                ondragstart={handlePrefixDragStart(i, j)}
+                ondragover={handlePrefixDragOver(i, j)}
+                ondragleave={handlePrefixDragLeave}
+                ondragend={handlePrefixDragEnd}
+                role="button"
+                aria-label="Drag to reorder prefix"
+                tabindex="0"
+                animate:flip={{ duration: 200 }}
+              >
                 {#if value.prefixes.length > 1}
-                  <div
-                    class="w-3 cursor-move"
-                    draggable="true"
-                    ondragstart={handlePrefixDragStart(i, j)}
-                    ondragover={handlePrefixDragOver(i, j)}
-                    ondragleave={handlePrefixDragLeave}
-                    ondragend={handlePrefixDragEnd}
-                    class:prefix-drag-over={prefix_drag_target?.row === i && prefix_drag_target?.col === j}
-                    role="button"
-                    aria-label="Drag to reorder prefix"
-                    tabindex="0"
-                  >
-                    ⋮
-                  </div>
+                  <div class="w-3">⋮</div>
                 {/if}
                 <input
                   class="xs min-w-8 border-none"
@@ -338,16 +336,6 @@
   }
 
   .prefix-drag-over {
-    position: relative;
-  }
-
-  .prefix-drag-over::after {
-    content: '';
-    position: absolute;
-    left: -4px;
-    width: 2px;
-    top: 0px;
-    bottom: 0px;
-    background-color: #4299e1;
+    opacity: 0.1;
   }
 </style>
