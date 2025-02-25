@@ -2,6 +2,7 @@
   import Dialog from '$lib/Dialog.svelte'
   import { Trash } from 'svelte-heros-v2'
   import { flip } from 'svelte/animate'
+  import DragList from '$lib/DragList.svelte'
 
   let open = $state(false)
   let title = $state('')
@@ -274,39 +275,28 @@
         >
           <div class="w-2 min-w-2">⋮</div>
           <input class="xs w-8 text-right" bind:value={value.prob} />
-          <div class="xs scrollbar-1 flex w-full grow-1 flex-wrap gap-1 p-[2px]">
-            {#each value.prefixes as prefix, j (prefix)}
-              <div
-                class="flex cursor-move items-center gap-[3px] rounded border-1 border-stone-300"
-                class:prefix-drag-over={prefix_drag_target?.row === i && prefix_drag_target?.col === j}
-                draggable="true"
-                ondragstart={handlePrefixDragStart(i, j)}
-                ondragover={handlePrefixDragOver(i, j)}
-                ondragleave={handlePrefixDragLeave}
-                ondragend={handlePrefixDragEnd}
-                role="button"
-                aria-label="Drag to reorder prefix"
-                tabindex="0"
-                animate:flip={{ duration: 200 }}
-              >
-                {#if value.prefixes.length > 1}
-                  <div class="w-3">⋮</div>
-                {/if}
-                <input
-                  class="xs min-w-8 border-none"
-                  size={value.prefixes[j].length || 1}
-                  bind:value={value.prefixes[j]}
-                  bind:this={prefix_input_refs[i][j]}
-                  onkeydown={(e) => handlePrefixInput(e, i, j)}
-                />
-                {#if value.prefixes.length > 1}
-                  <button class="border-none p-0 text-stone-300" onclick={delete_prefix(i, j)}
-                    ><Trash size="16" /></button
-                  >
-                {/if}
-              </div>
-            {/each}
-          </div>
+          <DragList
+            container_class="xs scrollbar-1 flex w-full grow-1 flex-wrap gap-1 p-[2px]"
+            draggable_class="flex cursor-move items-center gap-[3px] rounded border-1 border-stone-300"
+            bind:items={value.prefixes}
+          >
+            {#snippet children(j)}
+              {#if value.prefixes.length > 1}
+                <div class="w-3">⋮</div>
+              {/if}
+              <input
+                class="xs min-w-8 border-none"
+                size={value.prefixes[j].length || 1}
+                bind:value={value.prefixes[j]}
+                bind:this={prefix_input_refs[i][j]}
+                onkeydown={(e) => handlePrefixInput(e, i, j)}
+              />
+              {#if value.prefixes.length > 1}
+                <button class="border-none p-0 text-stone-300" onclick={delete_prefix(i, j)}><Trash size="16" /></button
+                >
+              {/if}
+            {/snippet}
+          </DragList>
           <input class="xs w-40" bind:value={value.value} use:handleInputRef={i} />
           <input class="xs w-40" bind:value={value.disables} />
           <button class="border-none p-1" onclick={delete_value(i)}><Trash size="20" /></button>
