@@ -153,7 +153,12 @@
         >
           <div>{slot}</div>
           <div class="grow-1"></div>
-          <DropDown iclass="max-w-80 xs ring-0" items={wildcards_values(slot)} bind:value={settings.selection[slot]} />
+          <DropDown
+            iclass="max-w-60 xs ring-0 truncate"
+            popup_class="max-w-70"
+            items={wildcards_values(slot)}
+            bind:value={settings.selection[slot]}
+          />
           {#if settings.show_selection && settings.selections && settings.selection[slot] === 'random' && hide_tooltip !== slot}
             <div
               class="xs absolute top-0 right-0 min-h-5 max-w-60 min-w-13 truncate rounded border-1 border-stone-300 bg-slate-50 {settings
@@ -179,6 +184,7 @@
   .drag-over {
     position: relative;
   }
+
   .drag-over::after {
     content: '';
     position: absolute;

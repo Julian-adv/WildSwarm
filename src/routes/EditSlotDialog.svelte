@@ -6,7 +6,8 @@
   let open = $state(false)
   let title = $state('')
   let slot_name = $state('')
-  let slot_values: { prob: string; prefixes: string[]; value: string; disables: string }[] = $state([])
+  let slot_values: { prob: string; prefixes: string[]; value: string; disables: string; postfixes: string[] }[] =
+    $state([])
   let ok_button = $state('')
   let on_ok: (slot_name: string, slot_values: string[]) => string
   let on_delete: ((slot_name: string) => void) | undefined = $state(undefined)
@@ -14,6 +15,7 @@
   let last_value_input: HTMLInputElement
   let dialog: Dialog
   let prefix_input_refs: HTMLInputElement[][] = $state([])
+  let postfix_input_refs: HTMLInputElement[][] = $state([])
 
   export function open_dialog(
     title_arg: string,
@@ -30,6 +32,7 @@
       let prob = ''
       let prefixes: string[] = ['']
       let value = str
+      let postfixes: string[] = ['']
       let disables = ''
 
       // Check if first part is a number (probability)
@@ -40,11 +43,18 @@
       }
 
       // Check for {abc|def|ghi} pattern
-      const match = value.match(/\{([^}]+)\} */)
+      const match = value.match(/^ *\{([^}]+)\} */)
       if (match) {
         const content = match[1]
         prefixes = content.split('|')
         value = value.replace(match[0], '')
+      }
+
+      const postfixes_match = value.match(/ *\{([^}]+)\} *$/)
+      if (postfixes_match) {
+        const content = postfixes_match[1]
+        postfixes = content.split('|')
+        value = value.replace(postfixes_match[0], '')
       }
 
       // Extract disables if exists
@@ -54,11 +64,12 @@
         disables = disablesParts[1].trim()
       }
 
-      return { prob, prefixes, value, disables }
+      return { prob, prefixes, value, postfixes, disables }
     })
     ok_button = ok_button_arg
     for (let i = 0; i < slot_values.length; i++) {
       prefix_input_refs[i] = []
+      postfix_input_refs[i] = []
     }
     on_ok = on_ok_arg
     on_delete = on_delete_arg
@@ -66,8 +77,9 @@
   }
 
   function add_value() {
-    slot_values = [...slot_values, { prob: '', prefixes: [''], value: '', disables: '' }]
+    slot_values = [...slot_values, { prob: '', prefixes: [''], value: '', postfixes: [''], disables: '' }]
     prefix_input_refs = [...prefix_input_refs, []]
+    postfix_input_refs = [...postfix_input_refs, []]
     // Focus the new input after the next render
     setTimeout(() => last_value_input?.focus(), 0)
   }
@@ -86,10 +98,13 @@
   }
 
   function internal_on_ok() {
-    const combined_values = slot_values.map(({ prob, prefixes, value, disables }) => {
+    const combined_values = slot_values.map(({ prob, prefixes, value, postfixes, disables }) => {
       let result = value
       if (prefixes && prefixes.length > 0 && !(prefixes.length === 1 && prefixes[0] === '')) {
         result = `{${prefixes.join('|')}} ${result}`
+      }
+      if (postfixes && postfixes.length > 0 && !(postfixes.length === 1 && postfixes[0] === '')) {
+        result = `${result} {${postfixes.join('|')}}`
       }
       if (prob) {
         result = `${prob},${result}`
@@ -120,12 +135,21 @@
     }
   }
 
-  function handlePrefixInput(event: KeyboardEvent, i: number, j: number) {
+  function handle_prefix_input(event: KeyboardEvent, i: number, j: number) {
     if (event.key === '|') {
       event.preventDefault()
       slot_values[i].prefixes.splice(j + 1, 0, '')
       slot_values = slot_values
       setTimeout(() => prefix_input_refs[i][j + 1]?.focus(), 0)
+    }
+  }
+
+  function handle_postfix_input(event: KeyboardEvent, i: number, j: number) {
+    if (event.key === '|') {
+      event.preventDefault()
+      slot_values[i].postfixes.splice(j + 1, 0, '')
+      slot_values = slot_values
+      setTimeout(() => postfix_input_refs[i][j + 1]?.focus(), 0)
     }
   }
 
@@ -142,6 +166,20 @@
       })
     }
   }
+
+  function delete_postfix(i: number, j: number) {
+    return () => {
+      if (slot_values[i].postfixes.length === 1) {
+        return
+      }
+      slot_values[i].postfixes.splice(j, 1)
+      slot_values = slot_values
+      // Wait for Svelte to update the DOM
+      setTimeout(() => {
+        postfix_input_refs[i]?.[j + 1]?.focus()
+      })
+    }
+  }
 </script>
 
 <Dialog bind:this={dialog} bind:open {title} {ok_button} on_ok={internal_on_ok}>
@@ -154,7 +192,7 @@
       {/if}
     </div>
     <DragList
-      container_class="mt-2 flex flex-col"
+      container_class="mt-2 flex flex-col overflow-y-auto max-h-[70vh]"
       draggable_class="flex cursor-move items-center gap-1 text-right even:bg-slate-100"
       bind:items={slot_values}
     >
@@ -163,8 +201,9 @@
           <div class="w-2 shrink-0"></div>
           <div class="w-8 shrink-0 text-right">%</div>
           <div class="w-full grow-1 pl-1">Prefixes</div>
-          <div class="w-40 shrink-0">Values</div>
-          <div class="w-40 shrink-0">Disable slots</div>
+          <div class="w-40 shrink-0">Value</div>
+          <div class="w-full grow-1 pl-1">Sub values</div>
+          <div class="w-30 shrink-0">Disable slots</div>
           <div class="w-7 shrink-0"></div>
         </div>
       {/snippet}
@@ -185,7 +224,7 @@
               size={prefix.length || 1}
               bind:value={value.prefixes[j]}
               bind:this={prefix_input_refs[i][j]}
-              onkeydown={(e) => handlePrefixInput(e, i, j)}
+              onkeydown={(e) => handle_prefix_input(e, i, j)}
             />
             {#if value.prefixes.length > 1}
               <button class="border-none p-0 text-stone-300" onclick={delete_prefix(i, j)}><Trash size="16" /></button>
@@ -193,7 +232,28 @@
           {/snippet}
         </DragList>
         <input class="xs w-40" bind:value={value.value} use:handleInputRef={i} onkeydown={handle_keydown} />
-        <input class="xs w-40" bind:value={value.disables} />
+        <DragList
+          container_class="xs scrollbar-1 flex w-full grow-1 flex-wrap gap-1 p-[2px]"
+          draggable_class="flex cursor-move items-center gap-[3px] rounded border-1 border-stone-300"
+          bind:items={value.postfixes}
+        >
+          {#snippet children(postfix, j)}
+            {#if value.postfixes.length > 1}
+              <div class="w-3">⋮</div>
+            {/if}
+            <input
+              class="xs min-w-8 border-none"
+              size={postfix.length || 1}
+              bind:value={value.postfixes[j]}
+              bind:this={postfix_input_refs[i][j]}
+              onkeydown={(e) => handle_postfix_input(e, i, j)}
+            />
+            {#if value.postfixes.length > 1}
+              <button class="border-none p-0 text-stone-300" onclick={delete_postfix(i, j)}><Trash size="16" /></button>
+            {/if}
+          {/snippet}
+        </DragList>
+        <input class="xs w-30" bind:value={value.disables} />
         <button class="border-none p-1" onclick={delete_value(i)}><Trash size="20" /></button>
       {/snippet}
     </DragList>
