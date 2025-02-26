@@ -205,7 +205,7 @@
     </div>
     <DragList
       container_class="mt-2 flex flex-col overflow-y-auto max-h-[70vh]"
-      draggable_class="flex cursor-move items-center gap-1 text-right even:bg-slate-100"
+      draggable_class="flex cursor-move items-center gap-1 text-right even:bg-slate-100 mr-[2px]"
       bind:items={slot_values}
     >
       {#snippet header()}
