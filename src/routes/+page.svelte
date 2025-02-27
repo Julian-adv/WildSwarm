@@ -1,7 +1,7 @@
 <script lang="ts">
   import Select from '$lib/Select.svelte'
   import { process_wildcards } from '$lib/wildcards'
-  import { load_json, model_name_to_file, save_json } from '$lib/file'
+  import { load_json, load_text, model_name_to_file, save_json } from '$lib/file'
   import { onMount } from 'svelte'
   import type { PageProps } from './$types'
   import SlotList from './SlotList.svelte'
@@ -116,14 +116,18 @@
   async function handle_generate() {
     save_json(settings.model_settings, model_name_to_file(settings.model))
 
+    const { prompt, selections } = process_wildcards(settings.template, wildcards, settings)
+    settings.prompt = settings.model_settings.positiveprompt + ',' + prompt
+    settings.selections = selections
+    save_json(settings, 'settings.json')
+    generate(settings)
+  }
+
+  async function generate(settings: any) {
     // Create WebSocket connection
     const ws = new WebSocket('ws://localhost:7801/API/GenerateText2ImageWS')
 
     ws.onopen = () => {
-      const { prompt, selections } = process_wildcards(settings.template, wildcards, settings)
-      settings.prompt = settings.model_settings.positiveprompt + ',' + prompt
-      settings.selections = selections
-      save_json(settings, 'settings.json')
       // Send parameters once connected
       ws.send(
         JSON.stringify({
@@ -182,6 +186,45 @@
     }
   }
 
+  async function handle_generate_danbooru() {
+    const result = await load_text('danbooru_tags.txt')
+    if (!result.success) {
+      return
+    }
+    const lines = result.data.split('\n').slice(0, 3000)
+
+    // Update the prompt with the danbooru tags
+    if (lines.length > 0) {
+      // You can customize how you want to use these tags
+      // For example, randomly select some tags or use specific ones
+      const random_tags = get_random_elements(lines, 15) // Get 5 random tags
+      settings.prompt = settings.model_settings.positiveprompt + ', ' + random_tags.join(', ')
+      generate(settings)
+    }
+  }
+
+  function get_random_elements(array: string[], count: number) {
+    const result: string[] = []
+    const len = array.length
+
+    // Handle the case where the count is larger than the array length
+    if (count >= len) return [...array]
+
+    // Select random indices without duplication
+    const indices = new Set<number>()
+    while (indices.size < count) {
+      const randomIndex = Math.floor(Math.random() * len)
+      indices.add(randomIndex)
+    }
+
+    // Return elements at the selected indices
+    for (const index of indices) {
+      result.push(array[index])
+    }
+
+    return result
+  }
+
   function set_params(params: any) {
     for (const param of params.list) {
       if (param.id === 'aspectratio') {
@@ -209,7 +252,7 @@
   async function handle_model_change(model: string) {
     const result = await load_json(model_name_to_file(model))
     if (result.success) {
-      settings.model_settings = result.json_obj
+      settings.model_settings = result.data
     }
   }
 
@@ -390,6 +433,7 @@
     </div>
     <div class="bg-background border-t-1 border-stone-300 p-1">
       <button class="primary m-[2px] border-1 text-sm" onclick={handle_generate}>Generate</button>
+      <button class="primary m-[2px] border-1 text-sm" onclick={handle_generate_danbooru}>Danbooru</button>
     </div>
   </div>
   <div>

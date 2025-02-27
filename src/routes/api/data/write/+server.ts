@@ -1,4 +1,5 @@
 import { json } from '@sveltejs/kit'
+import * as yaml from 'yaml'
 import { writeFile, mkdir } from 'node:fs/promises'
 import { join, dirname } from 'node:path'
 import { existsSync } from 'node:fs'
@@ -6,10 +7,17 @@ import type { RequestHandler } from './$types'
 
 export const POST: RequestHandler = async ({ request }) => {
   try {
-    const data = await request.json()
-    const json_str = JSON.stringify(data.json, null, 2)
+    const req = await request.json()
+    let data
+    if (req.type === 'json') {
+      data = JSON.stringify(req.data, null, 2)
+    } else if (req.type === 'yaml') {
+      data = yaml.stringify(req.data)
+    } else {
+      data = req.data
+    }
 
-    const filePath = join('data', data.path)
+    const filePath = join('data', req.path)
     const dirPath = dirname(filePath)
 
     // Create directory if it doesn't exist
@@ -17,7 +25,7 @@ export const POST: RequestHandler = async ({ request }) => {
       await mkdir(dirPath, { recursive: true })
     }
 
-    await writeFile(filePath, json_str)
+    await writeFile(filePath, data)
 
     return json({ success: true })
   } catch (error) {
