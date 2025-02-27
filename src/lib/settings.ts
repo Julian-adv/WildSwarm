@@ -1,4 +1,31 @@
-export const default_model_settings = {
+export interface ModelSettings {
+  refinermodel: string
+  positiveprompt: string
+  negativeprompt: string
+  steps: number
+  cfgscale: number
+  sampler: string
+  scheduler: string
+  refinercontrolpercentage: number
+  refinermethod: string
+  refinerupscalemethod: string
+  refinercfgscale: number
+  refinerupscale: number
+  automaticvae: boolean
+  vae: string
+}
+
+export interface DanbooruSettings {
+  max_tags: number
+  num_tags: number
+}
+
+export interface Settings {
+  model_settings?: any
+  danbooru_settings?: DanbooruSettings
+}
+
+export const default_model_settings: ModelSettings = {
   refinermodel: '',
   positiveprompt: '',
   negativeprompt: '',
@@ -13,4 +40,9 @@ export const default_model_settings = {
   refinerupscale: 1.5,
   automaticvae: true,
   vae: ''
+}
+
+export const default_danbooru_settings: DanbooruSettings = {
+  max_tags: 5000,
+  num_tags: 15
 }

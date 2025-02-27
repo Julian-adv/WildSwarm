@@ -2,12 +2,13 @@
   import { XMark } from 'svelte-heros-v2'
   interface Props {
     open: boolean
+    iclass?: string
     title: string
     ok_button: string
     on_ok?: () => string
     children: any
   }
-  let { open = $bindable(), title, ok_button, on_ok, children }: Props = $props()
+  let { open = $bindable(), iclass = 'max-w-6xl', title, ok_button, on_ok, children }: Props = $props()
   let error_message: string = $state('')
 
   function close_dialog() {
@@ -48,7 +49,7 @@
   ></div>
 
   <div
-    class="bg-background fixed top-1/2 left-1/2 z-50 w-full max-w-6xl -translate-x-1/2 -translate-y-1/2 transform rounded-lg p-4 shadow-xl"
+    class="bg-background fixed top-1/2 left-1/2 z-50 w-full {iclass} -translate-x-1/2 -translate-y-1/2 transform rounded-lg p-4 shadow-xl"
   >
     <h2 class="w-full text-center">{title}</h2>
     <button class="absolute top-2 right-2 border-none px-0 py-0" onclick={close_dialog}><XMark size="24" /></button>

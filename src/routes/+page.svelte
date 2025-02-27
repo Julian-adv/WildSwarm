@@ -5,6 +5,7 @@
   import { onMount } from 'svelte'
   import type { PageProps } from './$types'
   import SlotList from './SlotList.svelte'
+  import TagList from './TagList.svelte'
 
   let session: any = $state({})
   let image: string = $state('')
@@ -43,6 +44,8 @@
   let refiner_upscale_methods: string[] = $state([])
   let vaes: string[] = $state([])
   let vae_labels: string[] = $state([])
+  let tags: string[] = $state([])
+  let tag_list: TagList
 
   $effect(() => {
     if (width_heights[settings.aspectratio]) {
@@ -117,7 +120,8 @@
     save_json(settings.model_settings, model_name_to_file(settings.model))
 
     const { prompt, selections } = process_wildcards(settings.template, wildcards, settings)
-    settings.prompt = settings.model_settings.positiveprompt + ',' + prompt
+    await tag_list.populate()
+    settings.prompt = settings.model_settings.positiveprompt + ',' + prompt + ',' + tags.join(', ')
     settings.selections = selections
     save_json(settings, 'settings.json')
     generate(settings)
@@ -186,45 +190,6 @@
     }
   }
 
-  async function handle_generate_danbooru() {
-    const result = await load_text('danbooru_tags.txt')
-    if (!result.success) {
-      return
-    }
-    const lines = result.data.split('\n').slice(0, 3000)
-
-    // Update the prompt with the danbooru tags
-    if (lines.length > 0) {
-      // You can customize how you want to use these tags
-      // For example, randomly select some tags or use specific ones
-      const random_tags = get_random_elements(lines, 15) // Get 5 random tags
-      settings.prompt = settings.model_settings.positiveprompt + ', ' + random_tags.join(', ')
-      generate(settings)
-    }
-  }
-
-  function get_random_elements(array: string[], count: number) {
-    const result: string[] = []
-    const len = array.length
-
-    // Handle the case where the count is larger than the array length
-    if (count >= len) return [...array]
-
-    // Select random indices without duplication
-    const indices = new Set<number>()
-    while (indices.size < count) {
-      const randomIndex = Math.floor(Math.random() * len)
-      indices.add(randomIndex)
-    }
-
-    // Return elements at the selected indices
-    for (const index of indices) {
-      result.push(array[index])
-    }
-
-    return result
-  }
-
   function set_params(params: any) {
     for (const param of params.list) {
       if (param.id === 'aspectratio') {
@@ -285,6 +250,7 @@
         <div class="text-zinc-400">SwarmUI version: <em>{session.version}</em></div>
       {/if}
       <SlotList bind:wildcards bind:settings />
+      <TagList bind:this={tag_list} bind:tags bind:settings />
       <label class="mt-2 text-sm"
         ><input type="checkbox" class="translate-y-[1px]" bind:checked={settings.auto_template} />Auto template</label
       >
@@ -433,7 +399,6 @@
     </div>
     <div class="bg-background border-t-1 border-stone-300 p-1">
       <button class="primary m-[2px] border-1 text-sm" onclick={handle_generate}>Generate</button>
-      <button class="primary m-[2px] border-1 text-sm" onclick={handle_generate_danbooru}>Danbooru</button>
     </div>
   </div>
   <div>
