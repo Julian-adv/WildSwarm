@@ -1,7 +1,7 @@
 <script lang="ts">
   import Select from '$lib/Select.svelte'
   import { process_wildcards } from '$lib/wildcards'
-  import { save_json } from '$lib/file'
+  import { load_json, model_name_to_file, save_json } from '$lib/file'
   import { onMount } from 'svelte'
   import type { PageProps } from './$types'
   import SlotList from './SlotList.svelte'
@@ -115,14 +115,14 @@
   }
 
   async function handle_generate() {
-    save_json(settings, 'settings.json')
-    // save_yaml(wildcards, 'wildcards.yaml')
+    save_json(settings.model_settings, model_name_to_file(settings.model))
+
     // Create WebSocket connection
     const ws = new WebSocket('ws://localhost:7801/API/GenerateText2ImageWS')
 
     ws.onopen = () => {
       const { prompt, selections } = process_wildcards(settings.template, wildcards, settings)
-      settings.prompt = prompt
+      settings.prompt = settings.model_settings.positiveprompt + ',' + prompt
       settings.selections = selections
       save_json(settings, 'settings.json')
       // Send parameters once connected
@@ -130,25 +130,25 @@
         JSON.stringify({
           session_id: session.session_id,
           images: 1,
-          prompt: prompt,
-          negativeprompt: settings.negativeprompt,
+          prompt: settings.prompt,
+          negativeprompt: settings.model_settings.negativeprompt,
           model: settings.model,
           seed: settings.seed,
-          steps: settings.steps,
-          cfgscale: settings.cfgscale,
+          steps: settings.model_settings.steps,
+          cfgscale: settings.model_settings.cfgscale,
           aspectratio: settings.aspectratio,
           width: settings.width,
           height: settings.height,
-          sampler: settings.sampler,
-          scheduler: settings.scheduler,
-          refinermodel: settings.refinermodel,
-          refinercontrolpercentage: settings.refinercontrolpercentage,
-          refinermethod: settings.refinermethod,
-          refinerupscalemethod: settings.refinerupscalemethod,
-          refinercfgscale: settings.refinercfgscale,
-          refinerupscale: settings.refinerupscale,
-          automaticvae: settings.automaticvae,
-          vae: settings.vae
+          sampler: settings.model_settings.sampler,
+          scheduler: settings.model_settings.scheduler,
+          refinermodel: settings.model_settings.refinermodel,
+          refinercontrolpercentage: settings.model_settings.refinercontrolpercentage,
+          refinermethod: settings.model_settings.refinermethod,
+          refinerupscalemethod: settings.model_settings.refinerupscalemethod,
+          refinercfgscale: settings.model_settings.refinercfgscale,
+          refinerupscale: settings.model_settings.refinerupscale,
+          automaticvae: settings.model_settings.automaticvae,
+          vae: settings.model_settings.vae
         })
       )
     }
@@ -207,6 +207,13 @@
     }
   }
 
+  async function handle_model_change(model: string) {
+    const result = await load_json(model_name_to_file(model))
+    if (result.success) {
+      settings.model_settings = result.json_obj
+    }
+  }
+
   onMount(async () => {
     wildcards = data.wildcards
     settings = data.settings
@@ -260,6 +267,7 @@
           iclass="max-w-79"
           items={params.models['Stable-Diffusion'].map((x: any) => x.replace('.safetensors', ''))}
           bind:value={settings.model}
+          onchange={handle_model_change}
         />
       </label>
       <label class="m-[2px] mt-2 text-sm"
@@ -267,13 +275,24 @@
         <Select
           iclass="max-w-79"
           items={params.models['Stable-Diffusion'].map((x: any) => x.replace('.safetensors', ''))}
-          bind:value={settings.refinermodel}
+          bind:value={settings.model_settings.refinermodel}
         />
       </label>
     {/if}
     <label class="m-[2px] mt-2 text-sm"
+      >Positive prompt
+      <textarea
+        class="mt-1 h-20 w-full"
+        bind:value={settings.model_settings.positiveprompt}
+        onkeypress={handle_keypress}
+      ></textarea></label
+    >
+    <label class="m-[2px] mt-2 text-sm"
       >Negative prompt
-      <textarea class="mt-1 h-20 w-full" bind:value={settings.negativeprompt} onkeypress={handle_keypress}
+      <textarea
+        class="mt-1 h-20 w-full"
+        bind:value={settings.model_settings.negativeprompt}
+        onkeypress={handle_keypress}
       ></textarea></label
     >
     <label class="m-[2px] mt-2 text-sm"
@@ -282,11 +301,11 @@
     >
     <label class="m-[2px] mt-2 text-sm"
       >Steps
-      <input class="mt-1 w-full" type="number" bind:value={settings.steps} /></label
+      <input class="mt-1 w-full" type="number" bind:value={settings.model_settings.steps} /></label
     >
     <label class="m-[2px] mt-2 text-sm"
       >CFG Scale
-      <input class="mt-1 w-full" type="number" bind:value={settings.cfgscale} step="0.5" /></label
+      <input class="mt-1 w-full" type="number" bind:value={settings.model_settings.cfgscale} step="0.5" /></label
     >
     <label class="m-[2px] mt-2 text-sm"
       >Aspect Ratio
@@ -307,7 +326,12 @@
     >
     <label class="m-[2px] mt-2 text-sm"
       >Sampler
-      <Select iclass="mt-1 w-full" items={samplers} labels={sampler_labels} bind:value={settings.sampler} /></label
+      <Select
+        iclass="mt-1 w-full"
+        items={samplers}
+        labels={sampler_labels}
+        bind:value={settings.model_settings.sampler}
+      /></label
     >
     <label class="m-[2px] mt-2 text-sm"
       >Scheduler
@@ -315,12 +339,17 @@
         iclass="mt-1 w-full"
         items={schedulers}
         labels={scheduler_labels}
-        bind:value={settings.scheduler}
+        bind:value={settings.model_settings.scheduler}
       /></label
     >
     <label class="m-[2px] mt-2 text-sm"
       >Refiner control percentage
-      <input class="mt-1 w-full" type="number" bind:value={settings.refinercontrolpercentage} step="0.1" />
+      <input
+        class="mt-1 w-full"
+        type="number"
+        bind:value={settings.model_settings.refinercontrolpercentage}
+        step="0.1"
+      />
     </label>
     <label class="m-[2px] mt-2 text-sm"
       >Refiner method
@@ -328,7 +357,7 @@
         iclass="mt-1 w-full"
         items={refiner_methods}
         labels={refiner_method_labels}
-        bind:value={settings.refinermethod}
+        bind:value={settings.model_settings.refinermethod}
       /></label
     >
     <label class="m-[2px] mt-2 text-sm"
@@ -337,23 +366,24 @@
         iclass="mt-1 w-full"
         items={refiner_upscale_methods}
         labels={refiner_upscale_method_labels}
-        bind:value={settings.refinerupscalemethod}
+        bind:value={settings.model_settings.refinerupscalemethod}
       /></label
     >
     <label class="m-[2px] mt-2 text-sm"
       >Refiner CFG scale
-      <input class="mt-1 w-full" type="number" bind:value={settings.refinercfgscale} step="0.5" />
+      <input class="mt-1 w-full" type="number" bind:value={settings.model_settings.refinercfgscale} step="0.5" />
     </label>
     <label class="m-[2px] mt-2 text-sm"
       >Refiner upscale
-      <input class="mt-1 w-full" type="number" bind:value={settings.refinerupscale} step="0.1" />
+      <input class="mt-1 w-full" type="number" bind:value={settings.model_settings.refinerupscale} step="0.1" />
     </label>
     <label class="mt-2 text-sm"
-      ><input type="checkbox" class="translate-y-[1px]" bind:checked={settings.automaticvae} />Automatic VAE</label
+      ><input type="checkbox" class="translate-y-[1px]" bind:checked={settings.model_settings.automaticvae} />Automatic
+      VAE</label
     >
     <label class="m-[2px] mt-2 text-sm"
       >VAE
-      <Select iclass="mt-1 w-full" items={vaes} labels={vae_labels} bind:value={settings.vae} /></label
+      <Select iclass="mt-1 w-full" items={vaes} labels={vae_labels} bind:value={settings.model_settings.vae} /></label
     >
   </div>
   <div>
