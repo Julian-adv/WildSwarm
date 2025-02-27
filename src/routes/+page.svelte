@@ -70,7 +70,6 @@
       })
     })
     const data = await response.json()
-    console.log(data)
     return data
   }
 
@@ -236,155 +235,162 @@
 </script>
 
 <div class="grid grid-cols-[20rem_1fr] gap-2">
-  <div class="scrollbar-none flex max-h-[calc(100dvh-2rem)] flex-col overflow-y-auto">
-    <h1 class="text-3xl font-bold">Wild Swarm</h1>
-    {#if session}
-      <div class="text-zinc-400">SwarmUI version: <em>{session.version}</em></div>
-    {/if}
-    <SlotList bind:wildcards bind:settings />
-    <button class="primary m-[2px] mt-4 border-1 text-sm" onclick={handle_generate}>Generate</button>
-    <label class="mt-2 text-sm"
-      ><input type="checkbox" class="translate-y-[1px]" bind:checked={settings.auto_template} />Auto template</label
-    >
-    <label class="mt-2 text-sm"
-      ><input type="checkbox" class="translate-y-[1px]" bind:checked={settings.show_selection} />Show chosen selection</label
-    >
-    {#if !settings.auto_template}
+  <div class="flex max-h-[calc(100dvh-1rem)] flex-col">
+    <div class="scrollbar-none flex h-full flex-col overflow-y-auto">
+      <h1 class="text-3xl font-bold">Wild Swarm</h1>
+      {#if session}
+        <div class="text-zinc-400">SwarmUI version: <em>{session.version}</em></div>
+      {/if}
+      <SlotList bind:wildcards bind:settings />
       <label class="mt-2 text-sm"
-        >Template
-        <textarea class="mt-1 h-60 w-full" bind:value={settings.template} onkeypress={handle_keypress}
+        ><input type="checkbox" class="translate-y-[1px]" bind:checked={settings.auto_template} />Auto template</label
+      >
+      <label class="mt-2 text-sm"
+        ><input type="checkbox" class="translate-y-[1px]" bind:checked={settings.show_selection} />Show chosen selection</label
+      >
+      {#if !settings.auto_template}
+        <label class="mt-2 text-sm"
+          >Template
+          <textarea class="mt-1 h-60 w-full" bind:value={settings.template} onkeypress={handle_keypress}
+          ></textarea></label
+        >
+      {/if}
+      <label class="m-[2px] mt-2 text-sm"
+        >Prompt
+        <textarea class="mt-1 h-50 w-full" bind:value={settings.prompt} onkeypress={handle_keypress}></textarea></label
+      >
+      {#if params.models}
+        <label class="m-[2px] mt-2 text-sm"
+          >Model
+          <Select
+            iclass="max-w-79"
+            items={params.models['Stable-Diffusion'].map((x: any) => x.replace('.safetensors', ''))}
+            bind:value={settings.model}
+            onchange={handle_model_change}
+          />
+        </label>
+        <label class="m-[2px] mt-2 text-sm"
+          >Refiner Model
+          <Select
+            iclass="max-w-79"
+            items={params.models['Stable-Diffusion'].map((x: any) => x.replace('.safetensors', ''))}
+            bind:value={settings.model_settings.refinermodel}
+          />
+        </label>
+      {/if}
+      <label class="m-[2px] mt-2 text-sm"
+        >Positive prompt
+        <textarea
+          class="mt-1 h-20 w-full"
+          bind:value={settings.model_settings.positiveprompt}
+          onkeypress={handle_keypress}
         ></textarea></label
       >
-    {/if}
-    <label class="m-[2px] mt-2 text-sm"
-      >Prompt
-      <textarea class="mt-1 h-50 w-full" bind:value={settings.prompt} onkeypress={handle_keypress}></textarea></label
-    >
-    {#if params.models}
       <label class="m-[2px] mt-2 text-sm"
-        >Model
+        >Negative prompt
+        <textarea
+          class="mt-1 h-20 w-full"
+          bind:value={settings.model_settings.negativeprompt}
+          onkeypress={handle_keypress}
+        ></textarea></label
+      >
+      <label class="m-[2px] mt-2 text-sm"
+        >Seed
+        <input class="mt-1 w-full" type="number" bind:value={settings.seed} /></label
+      >
+      <label class="m-[2px] mt-2 text-sm"
+        >Steps
+        <input class="mt-1 w-full" type="number" bind:value={settings.model_settings.steps} /></label
+      >
+      <label class="m-[2px] mt-2 text-sm"
+        >CFG Scale
+        <input class="mt-1 w-full" type="number" bind:value={settings.model_settings.cfgscale} step="0.5" /></label
+      >
+      <label class="m-[2px] mt-2 text-sm"
+        >Aspect Ratio
         <Select
-          iclass="max-w-79"
-          items={params.models['Stable-Diffusion'].map((x: any) => x.replace('.safetensors', ''))}
-          bind:value={settings.model}
-          onchange={handle_model_change}
+          iclass="mt-1 w-full"
+          items={aspect_ratios}
+          labels={aspect_ratio_labels}
+          bind:value={settings.aspectratio}
+        /></label
+      >
+      <label class="m-[2px] mt-2 text-sm"
+        >Width
+        <input class="mt-1 w-full" type="number" bind:value={settings.width} /></label
+      >
+      <label class="m-[2px] mt-2 text-sm"
+        >Height
+        <input class="mt-1 w-full" type="number" bind:value={settings.height} /></label
+      >
+      <label class="m-[2px] mt-2 text-sm"
+        >Sampler
+        <Select
+          iclass="mt-1 w-full"
+          items={samplers}
+          labels={sampler_labels}
+          bind:value={settings.model_settings.sampler}
+        /></label
+      >
+      <label class="m-[2px] mt-2 text-sm"
+        >Scheduler
+        <Select
+          iclass="mt-1 w-full"
+          items={schedulers}
+          labels={scheduler_labels}
+          bind:value={settings.model_settings.scheduler}
+        /></label
+      >
+      <label class="m-[2px] mt-2 text-sm"
+        >Refiner control percentage
+        <input
+          class="mt-1 w-full"
+          type="number"
+          bind:value={settings.model_settings.refinercontrolpercentage}
+          step="0.1"
         />
       </label>
       <label class="m-[2px] mt-2 text-sm"
-        >Refiner Model
+        >Refiner method
         <Select
-          iclass="max-w-79"
-          items={params.models['Stable-Diffusion'].map((x: any) => x.replace('.safetensors', ''))}
-          bind:value={settings.model_settings.refinermodel}
-        />
+          iclass="mt-1 w-full"
+          items={refiner_methods}
+          labels={refiner_method_labels}
+          bind:value={settings.model_settings.refinermethod}
+        /></label
+      >
+      <label class="m-[2px] mt-2 text-sm"
+        >Refiner upscale method
+        <Select
+          iclass="mt-1 w-full"
+          items={refiner_upscale_methods}
+          labels={refiner_upscale_method_labels}
+          bind:value={settings.model_settings.refinerupscalemethod}
+        /></label
+      >
+      <label class="m-[2px] mt-2 text-sm"
+        >Refiner CFG scale
+        <input class="mt-1 w-full" type="number" bind:value={settings.model_settings.refinercfgscale} step="0.5" />
       </label>
-    {/if}
-    <label class="m-[2px] mt-2 text-sm"
-      >Positive prompt
-      <textarea
-        class="mt-1 h-20 w-full"
-        bind:value={settings.model_settings.positiveprompt}
-        onkeypress={handle_keypress}
-      ></textarea></label
-    >
-    <label class="m-[2px] mt-2 text-sm"
-      >Negative prompt
-      <textarea
-        class="mt-1 h-20 w-full"
-        bind:value={settings.model_settings.negativeprompt}
-        onkeypress={handle_keypress}
-      ></textarea></label
-    >
-    <label class="m-[2px] mt-2 text-sm"
-      >Seed
-      <input class="mt-1 w-full" type="number" bind:value={settings.seed} /></label
-    >
-    <label class="m-[2px] mt-2 text-sm"
-      >Steps
-      <input class="mt-1 w-full" type="number" bind:value={settings.model_settings.steps} /></label
-    >
-    <label class="m-[2px] mt-2 text-sm"
-      >CFG Scale
-      <input class="mt-1 w-full" type="number" bind:value={settings.model_settings.cfgscale} step="0.5" /></label
-    >
-    <label class="m-[2px] mt-2 text-sm"
-      >Aspect Ratio
-      <Select
-        iclass="mt-1 w-full"
-        items={aspect_ratios}
-        labels={aspect_ratio_labels}
-        bind:value={settings.aspectratio}
-      /></label
-    >
-    <label class="m-[2px] mt-2 text-sm"
-      >Width
-      <input class="mt-1 w-full" type="number" bind:value={settings.width} /></label
-    >
-    <label class="m-[2px] mt-2 text-sm"
-      >Height
-      <input class="mt-1 w-full" type="number" bind:value={settings.height} /></label
-    >
-    <label class="m-[2px] mt-2 text-sm"
-      >Sampler
-      <Select
-        iclass="mt-1 w-full"
-        items={samplers}
-        labels={sampler_labels}
-        bind:value={settings.model_settings.sampler}
-      /></label
-    >
-    <label class="m-[2px] mt-2 text-sm"
-      >Scheduler
-      <Select
-        iclass="mt-1 w-full"
-        items={schedulers}
-        labels={scheduler_labels}
-        bind:value={settings.model_settings.scheduler}
-      /></label
-    >
-    <label class="m-[2px] mt-2 text-sm"
-      >Refiner control percentage
-      <input
-        class="mt-1 w-full"
-        type="number"
-        bind:value={settings.model_settings.refinercontrolpercentage}
-        step="0.1"
-      />
-    </label>
-    <label class="m-[2px] mt-2 text-sm"
-      >Refiner method
-      <Select
-        iclass="mt-1 w-full"
-        items={refiner_methods}
-        labels={refiner_method_labels}
-        bind:value={settings.model_settings.refinermethod}
-      /></label
-    >
-    <label class="m-[2px] mt-2 text-sm"
-      >Refiner upscale method
-      <Select
-        iclass="mt-1 w-full"
-        items={refiner_upscale_methods}
-        labels={refiner_upscale_method_labels}
-        bind:value={settings.model_settings.refinerupscalemethod}
-      /></label
-    >
-    <label class="m-[2px] mt-2 text-sm"
-      >Refiner CFG scale
-      <input class="mt-1 w-full" type="number" bind:value={settings.model_settings.refinercfgscale} step="0.5" />
-    </label>
-    <label class="m-[2px] mt-2 text-sm"
-      >Refiner upscale
-      <input class="mt-1 w-full" type="number" bind:value={settings.model_settings.refinerupscale} step="0.1" />
-    </label>
-    <label class="mt-2 text-sm"
-      ><input type="checkbox" class="translate-y-[1px]" bind:checked={settings.model_settings.automaticvae} />Automatic
-      VAE</label
-    >
-    <label class="m-[2px] mt-2 text-sm"
-      >VAE
-      <Select iclass="mt-1 w-full" items={vaes} labels={vae_labels} bind:value={settings.model_settings.vae} /></label
-    >
+      <label class="m-[2px] mt-2 text-sm"
+        >Refiner upscale
+        <input class="mt-1 w-full" type="number" bind:value={settings.model_settings.refinerupscale} step="0.1" />
+      </label>
+      <label class="mt-2 text-sm"
+        ><input
+          type="checkbox"
+          class="translate-y-[1px]"
+          bind:checked={settings.model_settings.automaticvae}
+        />Automatic VAE</label
+      >
+      <label class="m-[2px] mt-2 text-sm"
+        >VAE
+        <Select iclass="mt-1 w-full" items={vaes} labels={vae_labels} bind:value={settings.model_settings.vae} /></label
+      >
+    </div>
+    <div class="bg-background border-t-1 border-stone-300 p-1">
+      <button class="primary m-[2px] border-1 text-sm" onclick={handle_generate}>Generate</button>
+    </div>
   </div>
   <div>
     <div class="relative inline-block h-[calc(100vh-1rem)] w-full align-top leading-none">
@@ -404,6 +410,3 @@
     </div>
   </div>
 </div>
-
-<style>
-</style>
