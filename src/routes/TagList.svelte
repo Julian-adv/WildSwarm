@@ -15,6 +15,7 @@
   let dialog: EditTagsDialog
   let tag_dialog: EditTagDialog
   let lines: string[] = $state([])
+  let danbooruWindow: Window | null = null
 
   function edit_tags() {
     dialog.open_dialog('Edit tags', danbooru_settings, 'Save', edit_tags_ok)
@@ -129,13 +130,30 @@
       }
     }
   }
+
+  function openDanbooruTag(tag: string) {
+    // URL-encode the tag to handle special characters
+    const encodedTag = encodeURIComponent(tag)
+    const url = `https://danbooru.donmai.us/posts?tags=${encodedTag}`
+
+    // Try to focus existing window if it exists and isn't closed
+    if (danbooruWindow && !danbooruWindow.closed) {
+      danbooruWindow.location.href = url
+      danbooruWindow.focus()
+    } else {
+      // Open new window and store reference
+      danbooruWindow = window.open(url, '_blank')
+    }
+
+    return false // Prevent default link behavior
+  }
 </script>
 
 <div class="mt-2 flex flex-col text-xs">
   <div class="font-bold">Tags</div>
   {#each tags as tag}
     <div class="mt-[1px] flex items-center px-1 py-[1px] {color_tag(tag)}">
-      {tag}
+      <button class="xs border-none" onclick={() => openDanbooruTag(tag)}>{tag}</button>
       <div class="grow-1"></div>
       <DropDown
         items={danbooru_settings.slots.concat([remove_slot_name, add_slot_name])}
