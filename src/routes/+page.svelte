@@ -6,6 +6,7 @@
   import type { PageProps } from './$types'
   import SlotList from './SlotList.svelte'
   import TagList from './TagList.svelte'
+  import type { DanbooruSettings } from '$lib/settings'
 
   let session: any = $state({})
   let image: string = $state('')
@@ -18,6 +19,7 @@
   let { data }: PageProps = $props()
   let wildcards: any = $state(data.wildcards)
   let settings: any = $state(data.settings)
+  let danbooru_settings: DanbooruSettings = $state(data.danbooru_settings)
   let aspect_ratio_labels: string[] = $state([])
   let aspect_ratios: string[] = $state([])
   const width_heights: { [key: string]: { width: number; height: number } } = {
@@ -250,7 +252,7 @@
         <div class="text-zinc-400">SwarmUI version: <em>{session.version}</em></div>
       {/if}
       <SlotList bind:wildcards bind:settings />
-      <TagList bind:this={tag_list} bind:tags bind:settings />
+      <TagList bind:this={tag_list} bind:tags bind:danbooru_settings />
       <label class="mt-2 text-sm"
         ><input type="checkbox" class="translate-y-[1px]" bind:checked={settings.auto_template} />Auto template</label
       >

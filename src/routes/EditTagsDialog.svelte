@@ -1,20 +1,22 @@
 <script lang="ts">
   import Dialog from '$lib/Dialog.svelte'
-  import type { DanbooruSettings } from '$lib/settings'
+  import { default_danbooru_settings, type DanbooruSettings } from '$lib/settings'
 
   let open = $state(false)
   let title = $state('')
   let ok_button = $state('')
   let on_ok: (settings: DanbooruSettings) => string
-  let danbooru_settings = $state({ max_tags: 5000, num_tags: 15 })
+  let danbooru_settings: DanbooruSettings = $state({ ...default_danbooru_settings })
 
   export function open_dialog(
     title_arg: string,
+    danbooru_settings_arg: DanbooruSettings,
     ok_button_arg: string,
     on_ok_arg: (settings: DanbooruSettings) => string
   ) {
     open = true
     title = title_arg
+    danbooru_settings = { ...danbooru_settings_arg }
     ok_button = ok_button_arg
     on_ok = on_ok_arg
   }
