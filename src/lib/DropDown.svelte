@@ -4,8 +4,9 @@
     value?: string
     iclass: string
     popup_class?: string
+    onchange?: (value: string) => boolean
   }
-  let { items, value = $bindable(), iclass, popup_class = '' }: Props = $props()
+  let { items, value = $bindable(), iclass, popup_class = '', onchange }: Props = $props()
   let show = $state(false)
 
   function clickOutside(node: HTMLElement) {
@@ -26,14 +27,16 @@
 
   function select_item(item: string) {
     return () => {
-      value = item
       show = false
+      if (onchange?.(item)) {
+        value = item
+      }
     }
   }
 </script>
 
 <div class="relative" use:clickOutside>
-  <button class={iclass} onclick={() => (show = !show)}>{value}</button>
+  <button class={iclass} onclick={() => (show = !show)}>{value ?? ' '}</button>
   <div
     class="bg-background scrollbar-1 absolute right-0 z-10 flex max-h-100 w-fit flex-col overflow-y-auto rounded border-1 px-0 py-1 focus:ring-0 {popup_class} {show
       ? ''

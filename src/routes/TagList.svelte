@@ -3,6 +3,8 @@
   import EditTagsDialog from './EditTagsDialog.svelte'
   import type { DanbooruSettings } from '$lib/settings'
   import { load_text, save_json } from '$lib/file'
+  import DropDown from '$lib/DropDown.svelte'
+  import EditTagDialog from './EditTagDialog.svelte'
 
   interface Props {
     tags: string[]
@@ -11,6 +13,7 @@
   let { tags = $bindable(), danbooru_settings = $bindable() }: Props = $props()
 
   let dialog: EditTagsDialog
+  let tag_dialog: EditTagDialog
   let lines: string[] = $state([])
 
   function edit_tags() {
@@ -47,16 +50,16 @@
 
     // Select random indices without duplication
     const indices = new Set<number>()
-    const groups = new Set<number>()
+    const slots = new Set<string>()
     while (indices.size < count) {
       const randomIndex = Math.floor(Math.random() * max_count)
       if (
         !danbooru_settings.banned_tags[array[randomIndex]] &&
-        !groups.has(danbooru_settings.group[array[randomIndex]])
+        !slots.has(danbooru_settings.slot[array[randomIndex]])
       ) {
         indices.add(randomIndex)
-        if (danbooru_settings.group[array[randomIndex]]) {
-          groups.add(danbooru_settings.group[array[randomIndex]])
+        if (danbooru_settings.slot[array[randomIndex]]) {
+          slots.add(danbooru_settings.slot[array[randomIndex]])
         }
       }
     }
@@ -89,55 +92,57 @@
     }
   }
 
-  function group_tag(tag: string, delta: number) {
-    return async () => {
-      if (!danbooru_settings.group) danbooru_settings.group = {}
-      if (danbooru_settings.group[tag]) {
-        danbooru_settings.group[tag] = danbooru_settings.group[tag] + delta
-        if (danbooru_settings.group[tag] === 0) delete danbooru_settings.group[tag]
-      } else {
-        const max_group = Math.max(...Object.values(danbooru_settings.group))
-        danbooru_settings.group[tag] = max_group + 1
-      }
-      danbooru_settings.group = danbooru_settings.group
-      await save_json(danbooru_settings, 'danbooru_settings.json')
-    }
-  }
-
   function color_tag(tag: string) {
     if (danbooru_settings.banned_tags[tag]) {
       return 'bg-red-400/50'
     }
-    const colors = [
-      'bg-blue-400/50',
-      'bg-green-400/50',
-      'bg-yellow-400/50',
-      'bg-red-400/50',
-      'bg-purple-400/50',
-      'bg-orange-400/50',
-      'bg-teal-400/50',
-      'bg-slate-400/50'
-    ]
-    if (danbooru_settings.group[tag]) {
-      return colors[danbooru_settings.group[tag] % colors.length]
-    }
     return 'even:bg-slate-50'
+  }
+
+  function edit_tag_ok(tag: string) {
+    return (slot_name: string) => {
+      if (!danbooru_settings.slots.includes(slot_name)) {
+        danbooru_settings.slots.push(slot_name)
+      }
+      danbooru_settings.slot[tag] = slot_name
+      save_json(danbooru_settings, 'danbooru_settings.json')
+      return ''
+    }
+  }
+
+  const add_slot_name = 'Add ...'
+  const remove_slot_name = 'Remove'
+
+  function assign_slot(tag: string) {
+    return (slot: string): boolean => {
+      if (slot === add_slot_name) {
+        tag_dialog.open_dialog('Add slot', 'Save', edit_tag_ok(tag))
+        return false
+      } else if (slot === remove_slot_name) {
+        delete danbooru_settings.slot[tag]
+        save_json(danbooru_settings, 'danbooru_settings.json')
+        return false
+      } else {
+        danbooru_settings.slot[tag] = slot
+        save_json(danbooru_settings, 'danbooru_settings.json')
+        return true
+      }
+    }
   }
 </script>
 
-<div class="mt-2 flex flex-col text-sm">
+<div class="mt-2 flex flex-col text-xs">
   <div class="font-bold">Tags</div>
   {#each tags as tag}
-    <div class="flex items-center {color_tag(tag)}">
+    <div class="mt-[1px] flex items-center px-1 py-[1px] {color_tag(tag)}">
       {tag}
       <div class="grow-1"></div>
-      <button class="border-none p-0 text-zinc-500 ring-0 focus:ring-0" onclick={group_tag(tag, -1)}>
-        <ChevronLeft size="16" /></button
-      >
-      <div class="w-8">{danbooru_settings.group[tag] ?? ''}</div>
-      <button class="border-none p-0 text-zinc-500 ring-0 focus:ring-0" onclick={group_tag(tag, 1)}>
-        <ChevronRight size="16" /></button
-      >
+      <DropDown
+        items={danbooru_settings.slots.concat([remove_slot_name, add_slot_name])}
+        bind:value={danbooru_settings.slot[tag]}
+        iclass="max-w-60 xs ring-0 truncate min-w-8 min-h-[17px]"
+        onchange={assign_slot(tag)}
+      />
       <button class="border-none p-0 text-zinc-500 ring-0 focus:ring-0" onclick={ban_tag(tag)}>
         <XMark size="16" /></button
       >
@@ -145,7 +150,7 @@
   {/each}
   <div class="flex items-center">
     <button class="mt-2 ml-1 flex w-fit items-center gap-1 text-xs" onclick={edit_tags}
-      ><AdjustmentsHorizontal size="16" />Edit tags</button
+      ><AdjustmentsHorizontal size="16" />Settings</button
     >
     <button class="mt-2 ml-1 flex w-fit items-center gap-1 text-xs" onclick={(e) => populate()}
       ><ArrowPathRoundedSquare size="16" />Populate</button
@@ -153,3 +158,4 @@
   </div>
 </div>
 <EditTagsDialog bind:this={dialog}></EditTagsDialog>
+<EditTagDialog bind:this={tag_dialog}></EditTagDialog>
