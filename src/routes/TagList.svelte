@@ -150,7 +150,10 @@
 </script>
 
 <div class="mt-2 flex flex-col text-xs">
-  <div class="font-bold">Tags</div>
+  <div class="flex justify-between px-1">
+    <div class="font-bold">Tag</div>
+    <div class="pr-6 font-bold">Slot</div>
+  </div>
   {#each tags as tag}
     <div class="mt-[1px] flex items-center px-1 py-[1px] {color_tag(tag)}">
       <button class="xs border-none" onclick={() => openDanbooruTag(tag)}>{tag}</button>
