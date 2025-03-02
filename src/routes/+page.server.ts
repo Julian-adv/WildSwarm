@@ -20,11 +20,11 @@ export const load: PageServerLoad = async ({ fetch, params }) => {
   try {
     const json_str = await readFile(join('data', 'danbooru_settings.json'), 'utf8')
     danbooru_settings = JSON.parse(json_str)
-    if (!danbooru_settings.slot) {
-      danbooru_settings.slot = {}
+    if (!danbooru_settings.groups) {
+      danbooru_settings.groups = {}
     }
-    if (!danbooru_settings.slots) {
-      danbooru_settings.slots = []
+    if (!danbooru_settings.group_list) {
+      danbooru_settings.group_list = []
     }
   } catch (error) {
     console.log(error)

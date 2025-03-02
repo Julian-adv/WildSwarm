@@ -5,9 +5,9 @@
     items: any[]
     container_class: string
     draggable_class: string
-    ondrop?: (items: any[]) => void
+    ondrop?: (items: any[], drag_source: number | null, drag_target: number | null) => void
     header?: () => any
-    children: (item: any, i: number) => any
+    children: (item: any, i: number, drag_source: number | null, drag_target: number | null) => any
   }
   let { items = $bindable(), container_class, draggable_class, ondrop, header, children }: Props = $props()
   let drag_source: number | null = $state(null)
@@ -38,10 +38,10 @@
   }
 
   function handle_drag_end() {
+    ondrop?.(items, drag_source, drag_target)
     drag_source = null
     drag_target = null
     original_items = null
-    ondrop?.(items)
   }
 </script>
 
@@ -62,7 +62,7 @@
       tabindex="0"
       animate:flip={{ duration: 100 }}
     >
-      {@render children(item, i)}
+      {@render children(item, i, drag_source, drag_target)}
     </div>
   {/each}
 </div>

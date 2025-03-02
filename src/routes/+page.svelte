@@ -237,7 +237,7 @@
     set_params(params)
     images = await list_images()
     if (images.files.length > 0) {
-      image = 'http://localhost:7801/View/local/' + images.files[0].src
+      image = 'http://localhost:7801/View/' + images.files[0].src
       const metadata = JSON.parse(images.files[0].metadata)
       // settings = { ...settings, ...metadata.sui_image_params }
     }

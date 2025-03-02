@@ -18,9 +18,9 @@ export interface ModelSettings {
 export interface DanbooruSettings {
   max_tags: number
   num_tags: number
-  banned_tags: { [key: string]: boolean }
-  slot: { [key: string]: string }
-  slots: string[]
+  banned_tags: { [tag: string]: boolean }
+  groups: { [tag: string]: number }
+  group_list: number[]
 }
 
 export interface Settings {
@@ -49,6 +49,6 @@ export const default_danbooru_settings: DanbooruSettings = {
   max_tags: 5000,
   num_tags: 15,
   banned_tags: {},
-  slot: {},
-  slots: []
+  groups: {},
+  group_list: []
 }

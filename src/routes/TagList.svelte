@@ -5,6 +5,7 @@
   import { load_text, save_json } from '$lib/file'
   import DropDown from '$lib/DropDown.svelte'
   import EditTagDialog from './EditTagDialog.svelte'
+  import DragList from '$lib/DragList.svelte'
 
   interface Props {
     tags: string[]
@@ -40,6 +41,19 @@
     }
   }
 
+  function set_contains_list(set: Set<string>, list: string[]) {
+    for (const item of list) {
+      if (set.has(item)) return true
+    }
+    return false
+  }
+
+  function set_add_list(set: Set<string>, list: string[]) {
+    for (const item of list) {
+      set.add(item)
+    }
+  }
+
   function get_random_elements(array: string[], max_count: number, count: number) {
     const result: string[] = []
     const len = array.length
@@ -51,16 +65,14 @@
 
     // Select random indices without duplication
     const indices = new Set<number>()
-    const slots = new Set<string>()
+    const groups = new Set<number>()
     while (indices.size < count) {
       const randomIndex = Math.floor(Math.random() * max_count)
-      if (
-        !danbooru_settings.banned_tags[array[randomIndex]] &&
-        !slots.has(danbooru_settings.slot[array[randomIndex]])
-      ) {
+      const tag = array[randomIndex]
+      if (!danbooru_settings.banned_tags[tag] && !groups.has(danbooru_settings.groups[tag])) {
         indices.add(randomIndex)
-        if (danbooru_settings.slot[array[randomIndex]]) {
-          slots.add(danbooru_settings.slot[array[randomIndex]])
+        if (danbooru_settings.groups[tag]) {
+          groups.add(danbooru_settings.groups[tag])
         }
       }
     }
@@ -93,43 +105,47 @@
     }
   }
 
-  function color_tag(tag: string) {
+  function group_to_color(group: number) {
+    // Use the hash to select from a set of predefined pastel colors
+    const colors = [
+      'bg-blue-200/70',
+      'bg-green-200/70',
+      'bg-yellow-200/70',
+      'bg-purple-200/70',
+      'bg-pink-200/70',
+      'bg-indigo-200/70',
+      'bg-cyan-200/70',
+      'bg-orange-200/70',
+      'bg-lime-200/70'
+    ]
+
+    const colorIndex = Math.abs(group) % colors.length
+    return colors[colorIndex]
+  }
+
+  function color_tag(tag: string): string[] {
     if (danbooru_settings.banned_tags[tag]) {
-      return 'bg-red-400/50'
+      return ['bg-red-400/50']
     }
-    return 'even:bg-slate-50'
+
+    // Check if the tag is assigned to a slot
+    if (danbooru_settings.groups[tag]) {
+      // Generate a consistent color based on the slot name
+      const group = danbooru_settings.groups[tag]
+      return [group_to_color(group)]
+    }
+
+    return ['even:bg-slate-50']
   }
 
   function edit_tag_ok(tag: string) {
-    return (slot_name: string) => {
-      if (!danbooru_settings.slots.includes(slot_name)) {
-        danbooru_settings.slots.push(slot_name)
-      }
-      danbooru_settings.slot[tag] = slot_name
-      save_json(danbooru_settings, 'danbooru_settings.json')
+    return (group_name: string) => {
       return ''
     }
   }
 
   const add_slot_name = 'Add ...'
   const remove_slot_name = 'Remove'
-
-  function assign_slot(tag: string) {
-    return (slot: string): boolean => {
-      if (slot === add_slot_name) {
-        tag_dialog.open_dialog('Add slot', 'Save', edit_tag_ok(tag))
-        return false
-      } else if (slot === remove_slot_name) {
-        delete danbooru_settings.slot[tag]
-        save_json(danbooru_settings, 'danbooru_settings.json')
-        return false
-      } else {
-        danbooru_settings.slot[tag] = slot
-        save_json(danbooru_settings, 'danbooru_settings.json')
-        return true
-      }
-    }
-  }
 
   function openDanbooruTag(tag: string) {
     // URL-encode the tag to handle special characters
@@ -147,36 +163,80 @@
 
     return false // Prevent default link behavior
   }
+
+  function new_group_number() {
+    const max =
+      danbooru_settings.group_list.length > 0
+        ? danbooru_settings.group_list.reduce((max, current) => (current > max ? current : max), 0)
+        : 0
+    return max + 1
+  }
+
+  function reorder_tags(new_order: number[], drag_source: number | null, drag_target: number | null) {
+    if (drag_source !== null && drag_target !== null) {
+      if (drag_target > drag_source) {
+        drag_target--
+      }
+      // Get the tags from source and target
+      const sourceTag = tags[drag_source]
+      const targetTag = tags[drag_target]
+
+      // Create a group name based on combined tags if not already in a group
+      const group_number =
+        danbooru_settings.groups[sourceTag] || danbooru_settings.groups[targetTag] || new_group_number()
+
+      // Assign both tags to the same group
+      danbooru_settings.groups[sourceTag] = group_number
+      danbooru_settings.groups[targetTag] = group_number
+
+      // Make sure the group name is in the slots list
+      if (!danbooru_settings.group_list.includes(group_number)) {
+        danbooru_settings.group_list.push(group_number)
+      }
+
+      // Save the updated settings
+      save_json(danbooru_settings, 'danbooru_settings.json')
+    }
+  }
+
+  function drag_target_class(drag_target: number | null, index: number) {
+    if (drag_target === null) return ''
+    return drag_target + 1 === index ? 'border-1 border-sky-500 rounded' : ''
+  }
 </script>
 
-<div class="mt-2 flex flex-col text-xs">
-  <div class="flex justify-between px-1">
-    <div class="font-bold">Tag</div>
-    <div class="pr-6 font-bold">Slot</div>
-  </div>
-  {#each tags as tag}
-    <div class="mt-[1px] flex items-center px-1 py-[1px] {color_tag(tag)}">
-      <button class="xs border-none" onclick={() => openDanbooruTag(tag)}>{tag}</button>
+<DragList
+  container_class="mt-2 text-xs"
+  draggable_class="mt-1 flex cursor-move items-center gap-1 px-1 even:bg-slate-50"
+  items={tags}
+  ondrop={reorder_tags}
+>
+  {#snippet header()}
+    <div class="flex justify-between px-1">
+      <div class="font-bold">Tag</div>
+      <div class="pr-6 font-bold">Slot</div>
+    </div>
+  {/snippet}
+  {#snippet children(tag, index, drag_source, drag_target)}
+    <div class="relative flex w-full gap-1 {color_tag(tag)}">
+      {#if drag_target !== null && drag_target + 1 === index}
+        <div class="pointer-events-none absolute -top-6 right-0 bottom-0 left-0 rounded border-1 border-sky-500"></div>
+      {/if}
+      <button class="xs border-none focus:ring-0" onclick={() => openDanbooruTag(tag)}>{tag}</button>
       <div class="grow-1"></div>
-      <DropDown
-        items={danbooru_settings.slots.concat([remove_slot_name, add_slot_name])}
-        bind:value={danbooru_settings.slot[tag]}
-        iclass="max-w-60 xs ring-0 truncate min-w-8 min-h-[17px]"
-        onchange={assign_slot(tag)}
-      />
       <button class="border-none p-0 text-zinc-500 ring-0 focus:ring-0" onclick={ban_tag(tag)}>
         <XMark size="16" /></button
       >
     </div>
-  {/each}
-  <div class="flex items-center">
-    <button class="mt-2 ml-1 flex w-fit items-center gap-1 text-xs" onclick={edit_tags}
-      ><AdjustmentsHorizontal size="16" />Settings</button
-    >
-    <button class="mt-2 ml-1 flex w-fit items-center gap-1 text-xs" onclick={(e) => populate()}
-      ><ArrowPathRoundedSquare size="16" />Populate</button
-    >
-  </div>
+  {/snippet}
+</DragList>
+<div class="flex items-center">
+  <button class="mt-2 ml-1 flex w-fit items-center gap-1 text-xs" onclick={edit_tags}
+    ><AdjustmentsHorizontal size="16" />Settings</button
+  >
+  <button class="mt-2 ml-1 flex w-fit items-center gap-1 text-xs" onclick={(e) => populate()}
+    ><ArrowPathRoundedSquare size="16" />Populate</button
+  >
 </div>
 <EditTagsDialog bind:this={dialog}></EditTagsDialog>
 <EditTagDialog bind:this={tag_dialog}></EditTagDialog>
