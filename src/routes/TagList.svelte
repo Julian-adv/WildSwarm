@@ -123,19 +123,19 @@
     return colors[colorIndex]
   }
 
-  function color_tag(tag: string): string[] {
+  function color_tag(tag: string): string {
     if (danbooru_settings.banned_tags[tag]) {
-      return ['bg-red-400/50']
+      return 'bg-red-400/50'
     }
 
-    // Check if the tag is assigned to a slot
+    return 'even:bg-slate-50'
+  }
+
+  function group_color_tag(tag: string): string {
     if (danbooru_settings.groups[tag]) {
-      // Generate a consistent color based on the slot name
-      const group = danbooru_settings.groups[tag]
-      return [group_to_color(group)]
+      return group_to_color(danbooru_settings.groups[tag])
     }
-
-    return ['even:bg-slate-50']
+    return ''
   }
 
   function edit_tag_ok(tag: string) {
@@ -203,6 +203,13 @@
     if (drag_target === null) return ''
     return drag_target + 1 === index ? 'border-1 border-sky-500 rounded' : ''
   }
+
+  function same_group(index: number, tag: string) {
+    return (
+      danbooru_settings.groups[tag] !== undefined &&
+      danbooru_settings.groups[tag] === danbooru_settings.groups[tags[index - 1]]
+    )
+  }
 </script>
 
 <DragList
@@ -219,10 +226,14 @@
   {/snippet}
   {#snippet children(tag, index, drag_source, drag_target)}
     <div class="relative flex w-full gap-1 {color_tag(tag)}">
-      {#if drag_target !== null && drag_target + 1 === index}
-        <div class="pointer-events-none absolute -top-6 right-0 bottom-0 left-0 rounded border-1 border-sky-500"></div>
+      {#if (drag_target !== null && drag_target + 1 === index) || same_group(index, tag)}
+        <div
+          class="pointer-events-none absolute -top-[22px] right-0 bottom-0 left-0 rounded border-1 border-sky-500 {group_color_tag(
+            tag
+          )}"
+        ></div>
       {/if}
-      <button class="xs border-none focus:ring-0" onclick={() => openDanbooruTag(tag)}>{tag}</button>
+      <button class="xs max-w-72 truncate border-none focus:ring-0" onclick={() => openDanbooruTag(tag)}>{tag}</button>
       <div class="grow-1"></div>
       <button class="border-none p-0 text-zinc-500 ring-0 focus:ring-0" onclick={ban_tag(tag)}>
         <XMark size="16" /></button
