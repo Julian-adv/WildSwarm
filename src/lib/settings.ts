@@ -21,6 +21,7 @@ export interface DanbooruSettings {
   banned_tags: { [tag: string]: boolean }
   groups: { [tag: string]: number }
   group_list: number[]
+  current_tags: string[]
 }
 
 export interface Settings {
@@ -50,5 +51,6 @@ export const default_danbooru_settings: DanbooruSettings = {
   num_tags: 15,
   banned_tags: {},
   groups: {},
-  group_list: []
+  group_list: [],
+  current_tags: []
 }

@@ -46,7 +46,6 @@
   let refiner_upscale_methods: string[] = $state([])
   let vaes: string[] = $state([])
   let vae_labels: string[] = $state([])
-  let tags: string[] = $state([])
   let tag_list: TagList
 
   $effect(() => {
@@ -123,7 +122,8 @@
 
     const { prompt, selections } = process_wildcards(settings.template, wildcards, settings)
     await tag_list.populate()
-    settings.prompt = settings.model_settings.positiveprompt + ',' + prompt + ',' + tags.join(', ')
+    settings.prompt =
+      settings.model_settings.positiveprompt + ',' + prompt + ',' + danbooru_settings.current_tags.join(', ')
     settings.selections = selections
     save_json(settings, 'settings.json')
     generate(settings)
@@ -252,7 +252,7 @@
         <div class="text-zinc-400">SwarmUI version: <em>{session.version}</em></div>
       {/if}
       <SlotList bind:wildcards bind:settings />
-      <TagList bind:this={tag_list} bind:tags bind:danbooru_settings />
+      <TagList bind:this={tag_list} bind:danbooru_settings />
       <label class="mt-2 text-sm"
         ><input type="checkbox" class="translate-y-[1px]" bind:checked={settings.auto_template} />Auto template</label
       >
