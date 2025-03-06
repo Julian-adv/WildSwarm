@@ -38,7 +38,7 @@
   }
 
   function handle_drag_end() {
-    if (ondrop && original_items && drag_target && drag_source) {
+    if (ondrop && original_items && drag_target !== null && drag_source !== null) {
       ondrop(original_items, drag_source, drag_target)
     }
     drag_source = null

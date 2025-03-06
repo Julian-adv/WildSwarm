@@ -110,12 +110,14 @@
       'bg-blue-200/30',
       'bg-green-200/30',
       'bg-yellow-200/30',
-      'bg-purple-200/30',
       'bg-pink-200/30',
       'bg-indigo-200/30',
       'bg-cyan-200/30',
       'bg-orange-200/30',
-      'bg-lime-200/30'
+      'bg-lime-200/30',
+      'bg-red-200/30',
+      'bg-violet-200/30',
+      'bg-teal-200/30'
     ]
 
     const colorIndex = Math.abs(group) % colors.length
@@ -136,15 +138,6 @@
     }
     return ''
   }
-
-  function edit_tag_ok(tag: string) {
-    return (group_name: string) => {
-      return ''
-    }
-  }
-
-  const add_slot_name = 'Add ...'
-  const remove_slot_name = 'Remove'
 
   function openDanbooruTag(tag: string) {
     // URL-encode the tag to handle special characters
@@ -203,18 +196,6 @@
     }
   }
 
-  function drag_target_class(drag_target: number | null, index: number) {
-    if (drag_target === null) return ''
-    return drag_target + 1 === index ? 'border-1 border-sky-500 rounded' : ''
-  }
-
-  function same_group(index: number, tag: string) {
-    return (
-      danbooru_settings.groups[tag] !== undefined &&
-      danbooru_settings.groups[tag] === danbooru_settings.groups[danbooru_settings.current_tags[index - 1]]
-    )
-  }
-
   // Returns the height of a group at a given index
   // 0 if not in a group or not the last tag in the group
   function group_height(index: number, tag: string, drag_source: number | null, drag_target: number | null) {
@@ -266,7 +247,7 @@
           style="top: {-22 * (h - 1)}px;"
         ></div>
       {/if}
-      {#if drag_target && drag_target + 1 === index}
+      {#if drag_target !== null && drag_target + 1 === index}
         <div
           class="pointer-events-none absolute right-0 bottom-0 left-0 z-1 rounded border-1 border-red-500 bg-sky-200/20"
           style="top: {-22}px;"
